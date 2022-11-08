@@ -77,15 +77,6 @@ restore
 merge m:1 fnr using `edu_update', update
 drop _merge
 
-// create a 3-digit education code, with the first digit being aggregated in 
-// a meaningful way for our analysis: for example, we take together the 
-// digits 6, 7, and 8. This implies that we group together those with 
-// and undergraduate, graduate and post-graduate degree.
-gen nus = substr(pers_bu_nus2000, 1, 3)
-replace nus = "7" + substr(nus, 2, 3) if (substr(nus, 1, 1) == "6" | substr(nus, 1, 1) == "8") 
-replace nus = "4" + substr(nus, 2, 3) if (substr(nus, 1, 1) == "3" | substr(nus, 1, 1) == "5") 		 
-label var nus "education code, modified 3 digits"
-
 // document missing information on education, occupation and industry
 preserve 			
 	gen mi_edu  = missing(pers_bu_nus2000)
@@ -98,14 +89,15 @@ preserve
 	sort date
 	export excel using ${tables}/summary.xls, sheet("missings", replace) firstrow(varl) datestring("%tm")
 
-	twoway (connected mi_edu  date, msize(small) mcol(black)) ///
-	(connected mi_occ  date, msize(small) mcol(black)) ///
-	(connected mi_nace date, msize(small) mcol(black)), ///
-	graphregion(color(white)) scheme(s2mono) ///
+	twoway (line mi_edu  date, lpattern(solid)) ///
+	(line mi_occ  date, lpattern(dash)) ///
+	(line mi_nace date, lpattern(dot)), ///
+	graphregion(color(white)) ///
 	xlabel(660(12)745, format(%tmCY) grid) ///
 	ylabel(, format(%9.2f) grid) ///
 	xtitle("Year") ///
-	ytitle("Share of missing observations")
+	ytitle("Share of missing observations") ///
+	title("{fontface Roboto Condensed Bold: Missings}")
 	graph export ${figures}/missings.pdf, replace
 restore	
 local N0 = _N

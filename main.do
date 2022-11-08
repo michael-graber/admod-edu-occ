@@ -20,16 +20,28 @@ global data    "./data"                          // created datasets
 global tables  "./out/tables"                    // tables 
 global figures "./out/figures"                   // figures 
 
+// SSB color scheme
+/*
+net install ssbscheme, from("https://raw.githubusercontent.com/martin-andresen/ssbscheme/master") replace 
+sysuse auto, clear
+twoway (lpolyci price weight) (scatter price weight), scheme(ssbscheme) title("{fontface Roboto Condensed Bold: Dette er en tittel}")
+*/
+set scheme ssbscheme
+translator set Graph2pdf fontfacesans "Open Sans"
+foreach type in ps eps svg window {
+	graph set `type' fontfacesans "Open Sans"
+	graph set `type' fontface "Open Sans"
+}
+
 // set up dataset
 do ${src}/data.do
 
-/*
 // descriptive analysis
 do ${src}/summary.do
 do ${src}/modes.do
 do ${src}/concentration.do
-do ${src}/tables.do
-do ${src}/figures.do
-*/
+//do ${src}/tables.do
+//do ${src}/figures.do
+
 di "$S_TIME $S_DATE"
 log close
