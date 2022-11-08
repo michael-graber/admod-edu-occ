@@ -1,0 +1,10 @@
+
+/data
+*.log
+*.smcl
+*.pdf
+*.eps
+*.png
+*.xls
+*.xlsx
+*.dta 
