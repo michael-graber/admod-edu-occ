@@ -29,6 +29,7 @@ preserve
 	gen mode         = cond(max_percent == percent, 1, 0)
 	keep if mode == 1
 	keep occ_4 edu_3 freq percent
+	duplicates drop occ_4, force // if there exists more than one mode 
 	merge m:1 edu_3  using ${data}/edu_3_digits,  keep(master match) keepusing(edu_3_label) nogen 
 	merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
 	order occ_4 occ_4_label licensed edu_3 edu_3_label freq percent
@@ -45,6 +46,7 @@ preserve
 	gen mode           = cond(max_percent == percent, 1, 0)
 	keep if mode == 1
 	keep occ_4 nace_1 edu_3 freq percent
+	duplicates drop occ_4 nace_1, force // if there exists more than one mode 
 	merge m:1 edu_3  using ${data}/edu_3_digits,  keep(master match) keepusing(edu_3_label) nogen 
 	merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
 	merge m:m nace_1 using ${data}/nace_1_digits, keep(master match) keepusing(nace_1_label) nogen // m:m merge is ok here
@@ -62,6 +64,7 @@ preserve
 	gen mode         = cond(max_percent == percent, 1, 0)
 	keep if mode == 1
 	keep occ_4 edu_3 freq percent
+	duplicates drop edu_3, force // if there exists more than one mode
 	merge m:1 edu_3  using ${data}/edu_3_digits,  keep(master match) keepusing(edu_3_label) nogen 
 	merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
 	order edu_3 edu_3_label occ_4 occ_4_label licensed freq percent
@@ -78,6 +81,7 @@ preserve
 	gen mode           = cond(max_percent == percent, 1, 0)
 	keep if mode == 1
 	keep occ_4 edu_3 nace_1 freq percent
+	duplicates drop edu_3 nace_1, force // if there exists more than one mode
 	merge m:1 edu_3  using ${data}/edu_3_digits,  keep(master match) keepusing(edu_3_label) nogen 
 	merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
 	merge m:m nace_1 using ${data}/nace_1_digits, keep(master match) keepusing(nace_1_label) nogen // m:m merge is ok here

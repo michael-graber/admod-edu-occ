@@ -2,11 +2,13 @@
 	                         TABLES					   					   
 ==============================================================================*/
 
-// Concentration of education within occupation
-// table with modal education and its share, and average HHI. 
-use ${data}/hhi_occ_m1_2015_m2_2022.dta, clear
+// concentration of education within occupation
+// table with modal education, and the share;
+// average number of workers in occupation / education (mode) cell   
+// average Herfindahl index 
+use ${data}/hhi_edu_within_occ.dta, clear
 collapse (mean) hhi [fw=freq_occ], by(occ_4)
-merge 1:1 occ_4 using ${data}/mode_edu_m1_2015_m2_2022.dta, assert(match) nogen
+merge 1:1 occ_4 using ${data}/mode_edu_within_occ.dta, assert(match) nogen
 drop if freq < 100 // minimum threshold
 order occ_4 occ_4_label edu_3 edu_3_label freq percent hhi 
 gsort -percent  
