@@ -30,9 +30,13 @@ forvalues t = 2015 / 2022 {
 		label values pers_kjoenn kjonn
 		replace arb_yrke_styrk08 = "" if arb_yrke_styrk08 == "0000" 
 		replace virk_nace1_sn07  = "" if virk_nace1_sn07 == "00.000" | substr(virk_nace1_sn07,1,1) == "-"
-		replace pers_bu_nus2000  = "" if substr(pers_bu_nus2000,1,1) == "-" | substr(pers_bu_nus2000,1,1) == "9" | ///
-			substr(pers_bu_nus2000,1,3) == "119" | substr(pers_bu_nus2000,1,3) == "129" | ///
-			substr(pers_bu_nus2000,1,3) == "159" | substr(pers_bu_nus2000,1,3) == "189" 
+		replace pers_bu_nus2000  = "" if ///
+		  substr(pers_bu_nus2000,1,1) == "-" ///
+		| substr(pers_bu_nus2000,1,1) == "9" ///
+		| substr(pers_bu_nus2000,1,3) == "119" ///
+		| substr(pers_bu_nus2000,1,3) == "129" ///
+		| substr(pers_bu_nus2000,1,3) == "159" ///
+		| substr(pers_bu_nus2000,1,3) == "189" 
 			
 		// salary, base year 2020
 		gen year = `t'
@@ -160,18 +164,21 @@ foreach l of numlist 1 3 {
 
 // industry classifications
 use ${data}/codes_sn2007.dta, clear
-keep if inrange(substr(code,1,1), "A","Z")
+keep if inrange(substr(code,1,1), "A","Y")
 keep code shortname 
 rename shortname nace_1_label
 save ${data}/nace_1_digits, replace
 use ${data}/codes_sn2007.dta, clear
-keep if inrange(substr(parentcode,1,1), "A","Z")
+keep if inrange(substr(parentcode,1,1), "A","Y")
 keep code parentcode
 rename code code_child
 rename parentcode code
 merge m:1 code using ${data}/nace_1_digits, assert(match) nogen noreport
 rename code nace_1 
 rename code_child nace_2
+// aggregate some smaller industries into one category
+replace nace_1_label = "Øvrige/mangler" if inlist(nace_1, "A", "B", "D", "E", "K") | inlist(nace_1, "L", "R", "S", "T", "U") 
+replace nace_1 = "Z" if inlist(nace_1, "A", "B", "D", "E", "K") | inlist(nace_1, "L", "R", "S", "T", "U") 
 save ${data}/nace_1_digits, replace
 
 

@@ -2,6 +2,39 @@
 	                         FIGURES					   					   
 ==============================================================================*/
 
+// percentage of workers in education-concentrated occupations over time
+preserve  
+	use ${data}/hhi_occ_m1_2015_m2_2022.dta, clear
+	collapse (mean) concentrated [fw=freq_occ], by(date)
+	gen percent = 100 * concentrated
+	sort date
+	twoway line percent date, ///
+	graphregion(color(white)) ///
+	xlabel(660(12)745, format(%tmCY) grid) ///
+	ylabel(0(10)50, format(%9.1f) grid) ///
+	xtitle("Year") ///
+	ytitle("Percent") ///
+	title("{fontface Roboto Condensed Bold: Concentrated Occupations}")
+	gr export ${figures}/concentrated_occ.pdf, replace 
+restore
+
+// percentage of workers in occupation-concentrated educations over time
+preserve  
+	use ${data}/hhi_edu_m1_2015_m2_2022.dta, clear
+	collapse (mean) concentrated [fw=freq_edu], by(date)
+	gen percent = 100 * concentrated
+	sort date
+	twoway line percent date, ///
+	graphregion(color(white)) ///
+	xlabel(660(12)745, format(%tmCY) grid) ///
+	ylabel(0(10)50, format(%9.1f) grid) ///
+	xtitle("Year") ///
+	ytitle("Percent") ///
+	title("{fontface Roboto Condensed Bold: Concentrated Educations}")
+	gr export ${figures}/concentrated_edu.pdf, replace 
+restore
+
+
 // Concentration of education within occupation --------------------------------
 // Distribution of log(HHI) = 2 * log(100) - log(n), where n is the number of 
 // (equally sized) education groups.
