@@ -77,7 +77,7 @@ preserve
 	contract edu_3 occ_4 nace_1, freq(freq) 
 	egen freq_edu_nace = sum(freq), by(edu_3 nace_1)
 	gen percent        = (freq / freq_edu_nace) * 100 
-	egen max_percent   = max(percent), by(edu_3)
+	egen max_percent   = max(percent), by(edu_3 nace_1)
 	gen mode           = cond(max_percent == percent, 1, 0)
 	keep if mode == 1
 	keep occ_4 edu_3 nace_1 freq percent
