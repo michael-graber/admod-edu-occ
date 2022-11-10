@@ -39,8 +39,8 @@ do ${src}/modes.do
 do ${src}/concentration.do
 
 // create tables and figures
-// do ${src}/tables.do
-// do ${src}/figures.do
+do ${src}/tables.do
+do ${src}/figures.do
 
 di "$S_TIME $S_DATE"
 log close
