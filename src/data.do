@@ -3,12 +3,25 @@
 ==============================================================================*/
 
 // Worker-month level observations --------------------------------------------- 
+local nobs_pop    = 0    // counter for number of obs in population
+local nobs_sample = 0    // counter for number of obs in sample 
 
 forvalues t = 2015 / 2022 {
 	forvalues m = 1 / 12 {
-
-		// load data
+		
 		noi di "Year = " `t' ", Month = " `m' 
+		
+		// full population 
+		cap use fnr arb_arbmark_status arb_hovedarbeid if /// 
+			!missing(fnr) &                /// non-missing identifier
+			(arb_arbmark_status == "1" | arb_arbmark_status == "2") & /// wage earner & self-employed
+			arb_hovedarbeid == "1" ///
+			using ${raw}/s312/aordning/ameld_statdata_`t'_m`m', clear
+		if _rc continue	
+		noi count
+		local nobs_pop = r(N) + `nobs_pop'
+		
+		// sample
 		cap use fnr pers_alder arb_arbmark_status arb_hovedarbeid pers_bosett_status ///
 		pers_invkat pers_kjoenn arb_arbeidstid virk_nace1_sn07 pers_bu_nus2000 ///
 		arb_yrke_styrk08 lonn_fmlonn  if   ///
@@ -20,6 +33,8 @@ forvalues t = 2015 / 2022 {
 			arb_arbeidstid >= 30           /// at least 30 hours per week
 		using ${raw}/s312/aordning/ameld_statdata_`t'_m`m', clear 
 		if _rc continue
+		count
+		noi local nobs_sample = r(N) + `nobs_sample'
 		drop arb_arbmark_status arb_hovedarbeid pers_bosett_status arb_arbeidstid
 		
 		// recode variables
@@ -67,6 +82,10 @@ forvalues t = 2015 / 2022 {
 		! rm ${data}/workers_`t'_m`m'.dta
 	}
 }
+
+local sample_coverage = round(`nobs_sample' / `nobs_pop' * 100, .01) 
+di "Selected sample covers " `sample_coverage' "% of the population"  
+scalar sample_coverage = `sample_coverage'
 
 // impute missing obs on education using within-person mode
 preserve		

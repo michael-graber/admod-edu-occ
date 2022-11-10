@@ -2,17 +2,19 @@
 	                   TABLES					   					   
 ==============================================================================*/
 
+// threshold
+local min_nobs = 100  // at least min_nobs workers in a given cell
+
 // concentration of education within occupation
 // note: we create a table for each occupation with 
 // - modal education, and its share
 // - average number of workers in a month occupation / education (mode) cell   
 // - Herfindahl index, averaged across periods 
-use ${data}/hhi_edu_within_occ.dta, clear
+use ${data}/hhi_edu_within_occ.dta if freq_occ > `min_nobs', clear // 
 collapse (mean) hhi [fw=freq_occ], by(occ_4)
-merge 1:1 occ_4       using ${data}/mode_edu_within_occ.dta, assert(match) nogen
+merge 1:1 occ_4       using ${data}/mode_edu_within_occ.dta, keep(master match) nogen
 merge 1:1 occ_4 edu_3 using ${data}/nobs_occ_edu.dta, keep(master match) nogen
-drop if nobs < 5      // minimum threshold, mode is based on at least 5 obs per month on average
-drop freq             // drop total number of obs in occupation / education (mode) cell   
+drop freq              // drop total number of obs in occupation / education (mode) cell   
 order occ_4 occ_4_label licensed edu_3 edu_3_label nobs percent hhi 
 gsort -percent  
 label var occ_4       "Yrke code"
@@ -30,9 +32,9 @@ export excel using ${tables}/concentration.xls, sheet("edu_within_occ", replace)
 // - modal education, and its share
 // - average number of workers in a month occupation / industry / education (mode) cell   
 // - Herfindahl index, averaged across periods 
-use ${data}/hhi_edu_within_occ_nace.dta, clear
+use ${data}/hhi_edu_within_occ_nace.dta if freq_occ_nace > `min_nobs', clear
 collapse (mean) hhi [fw=freq_occ_nace], by(occ_4 nace_1)
-merge 1:1 occ_4 nace_1       using ${data}/mode_edu_within_occ_nace.dta, assert(match) nogen
+merge 1:1 occ_4 nace_1       using ${data}/mode_edu_within_occ_nace.dta, keep(master match) nogen
 merge 1:1 occ_4 edu_3 nace_1 using ${data}/nobs_occ_edu_nace.dta, keep(master match) nogen
 drop if nobs < 5      // minimum threshold, mode is based on at least 5 obs per month on average
 drop freq             // drop total number of obs in occupation / industry / education (mode) cell   
@@ -59,9 +61,9 @@ foreach i of local nace_codes {
 // - modal occupation, and its share
 // - average number of workers in a month education / occupation (mode) cell   
 // - Herfindahl index, averaged across periods 
-use ${data}/hhi_occ_within_edu.dta, clear
+use ${data}/hhi_occ_within_edu.dta if freq_edu > `min_nobs', clear
 collapse (mean) hhi [fw=freq_edu], by(edu_3)
-merge 1:1 edu_3 using ${data}/mode_occ_within_edu.dta, assert(match) nogen
+merge 1:1 edu_3 using ${data}/mode_occ_within_edu.dta, keep(master match) nogen
 merge 1:1 occ_4 edu_3 using ${data}/nobs_occ_edu.dta, keep(master match) nogen
 drop if nobs < 5      // minimum threshold, mode is based on at least 5 obs per month on average
 drop freq             // drop total number of obs in occupation / education (mode) cell   
@@ -81,9 +83,9 @@ export excel using ${tables}/concentration.xls, sheet("occ_within_edu", replace)
 // - modal occupation, and its share
 // - average number of workers in a month education / industry / occupation (mode) cell   
 // - Herfindahl index, averaged across periods 
-use ${data}/hhi_occ_within_edu_nace.dta, clear
+use ${data}/hhi_occ_within_edu_nace.dta if freq_edu_nace > `min_nobs', clear
 collapse (mean) hhi [fw=freq_edu_nace], by(edu_3 nace_1)
-merge 1:1 edu_3 nace_1 using ${data}/mode_occ_within_edu_nace.dta, assert(match) nogen
+merge 1:1 edu_3 nace_1 using ${data}/mode_occ_within_edu_nace.dta, keep(master match) nogen
 merge 1:1 occ_4 edu_3 nace_1 using ${data}/nobs_occ_edu_nace.dta, keep(master match) nogen
 drop if nobs < 5      // minimum threshold, mode is based on at least 5 obs per month on average
 drop freq             // drop total number of obs in education / industry / occupation (mode) cell   
