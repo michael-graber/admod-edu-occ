@@ -1,0 +1,3145 @@
+----------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /ssb/stamme01/admod/users/mga/admod-edu-occ/main.log
+  log type:  text
+ opened on:  10 Nov 2022, 18:21:11
+
+. di "$S_TIME $S_DATE"
+18:21:11 10 Nov 2022
+
+. /*==============================================================================
+>                             MAIN FILE
+> 
+> The main file that runs all the child scripts in the correct order
+> ==============================================================================*/
+. 
+. // settings
+. version 17
+
+. set more off
+
+. set varabbrev off
+
+. set max_preservemem 30g
+
+. 
+. // directories
+. adopath ++     "./src"                           // additional ado files
+  [1]              "./src"
+  [2]  (BASE)      "/usr/local/stata17/ado/base/"
+  [3]  (SITE)      "/usr/local/ado/"
+  [4]              "."
+  [5]  (PERSONAL)  "~/ado/personal/"
+  [6]  (PLUS)      "~/ado/plus/"
+  [7]  (OLDPLACE)  "~/ado/"
+
+. global raw     "/ssb/stamme01/admod/wk48/"       // raw admin files
+
+. global src     "./src"                           // do-files
+
+. global data    "./data"                          // created datasets
+
+. global tables  "./out/tables"                    // tables 
+
+. global figures "./out/figures"                   // figures 
+
+. 
+. // SSB color scheme
+. // net install ssbscheme, from("https://raw.githubusercontent.com/martin-andresen/ssbscheme/master") 
+. set scheme ssbscheme
+
+. translator set Graph2pdf fontfacesans "Open Sans"
+
+. foreach type in ps eps svg window {
+  2.         graph set `type' fontfacesans "Open Sans"
+  3.         graph set `type' fontface "Open Sans"
+  4. }
+
+. 
+. // set up dataset
+. do ${src}/data.do
+
+. /*==============================================================================
+>                            SET UP ANALYSIS DATASETS                                                                                
+> ==============================================================================*/
+. 
+. // Worker-month level observations --------------------------------------------- 
+. local nobs_pop    = 0    // counter for number of obs in population
+
+. local nobs_sample = 0    // counter for number of obs in sample 
+
+. 
+. forvalues t = 2015 / 2022 {
+  2.         forvalues m = 1 / 12 {
+  3.                 
+.                 noi di "Year = " `t' ", Month = " `m' 
+  4.                 
+.                 // full population 
+.                 cap use fnr arb_arbmark_status arb_hovedarbeid if /// 
+>                         !missing(fnr) &                /// non-missing identifier
+>                         (arb_arbmark_status == "1" | arb_arbmark_status == "2") & /// wage earner & self-employed
+>                         arb_hovedarbeid == "1" ///
+>                         using ${raw}/s312/aordning/ameld_statdata_`t'_m`m', clear
+  5.                 if _rc continue 
+  6.                 noi count
+  7.                 local nobs_pop = r(N) + `nobs_pop'
+  8.                 
+.                 // sample
+.                 cap use fnr pers_alder arb_arbmark_status arb_hovedarbeid pers_bosett_status ///
+>                 pers_invkat pers_kjoenn arb_arbeidstid virk_nace1_sn07 pers_bu_nus2000 ///
+>                 arb_yrke_styrk08 lonn_fmlonn  if   ///
+>                         !missing(fnr) &                /// non-missing identifier
+>                         arb_arbmark_status == "1" &    /// wage earner
+>                         arb_hovedarbeid == "1" &       /// main employment    
+>                         inrange(pers_alder, 16, 74) &  /// age 16 - 74
+>                         pers_bosett_status == 1 &      /// resident in Norway
+>                         arb_arbeidstid >= 30           /// at least 30 hours per week
+>                 using ${raw}/s312/aordning/ameld_statdata_`t'_m`m', clear 
+  9.                 if _rc continue
+ 10.                 count
+ 11.                 noi local nobs_sample = r(N) + `nobs_sample'
+ 12.                 drop arb_arbmark_status arb_hovedarbeid pers_bosett_status arb_arbeidstid
+ 13.                 
+.                 // recode variables
+.                 tostring fnr, replace format(%17.0g)
+ 14.                 destring pers_kjoenn,  replace
+ 15.                 cap label drop kjonn
+ 16.                 lab define kjonn 1 "male" 2 "female"
+ 17.                 label values pers_kjoenn kjonn
+ 18.                 replace arb_yrke_styrk08 = "" if arb_yrke_styrk08 == "0000" 
+ 19.                 replace virk_nace1_sn07  = "" if virk_nace1_sn07 == "00.000" | substr(virk_nace1_sn07,1,1) == "-"
+ 20.                 replace pers_bu_nus2000  = "" if ///
+>                   substr(pers_bu_nus2000,1,1) == "-" ///
+>                 | substr(pers_bu_nus2000,1,1) == "9" ///
+>                 | substr(pers_bu_nus2000,1,3) == "119" ///
+>                 | substr(pers_bu_nus2000,1,3) == "129" ///
+>                 | substr(pers_bu_nus2000,1,3) == "159" ///
+>                 | substr(pers_bu_nus2000,1,3) == "189" 
+ 21.                         
+.                 // salary, base year 2020
+.                 gen year = `t'
+ 22.                 gen month = `m'
+ 23.                 cpi month year
+ 24.                 gen lonn = lonn_fmlonn * (112.2 / cpi)
+ 25.                 drop cpi year month lonn_fmlonn
+ 26.                 
+.                 // date
+.                 gen date  = mofd(mdy(`m', 15, `t'))
+ 27.                 format date %tm
+ 28.                 
+.                 // save data
+.                 order fnr date pers_kjoenn pers_alder pers_invkat pers_bu_nus2000 arb_yrke_styrk08 virk_nace1_sn07 lonn
+ 29.                 compress
+ 30.                 save ${data}/workers_`t'_m`m'.dta, replace
+ 31.                 
+.         }
+ 32. }
+Year = 2015, Month = 1
+  2,351,291
+  1,622,850
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(7,182 real changes made)
+(715 real changes made)
+(43,050 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (6,491,400 bytes saved)
+(file ./data/workers_2015_m1.dta not found)
+file ./data/workers_2015_m1.dta saved
+Year = 2015, Month = 2
+  2,472,739
+  1,749,031
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(6,195 real changes made)
+(749 real changes made)
+(55,187 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (6,996,124 bytes saved)
+(file ./data/workers_2015_m2.dta not found)
+file ./data/workers_2015_m2.dta saved
+Year = 2015, Month = 3
+  2,483,271
+  1,729,181
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,672 real changes made)
+(584 real changes made)
+(54,023 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (6,916,724 bytes saved)
+(file ./data/workers_2015_m3.dta not found)
+file ./data/workers_2015_m3.dta saved
+Year = 2015, Month = 4
+  2,490,979
+  1,752,309
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,549 real changes made)
+(571 real changes made)
+(55,621 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,009,236 bytes saved)
+(file ./data/workers_2015_m4.dta not found)
+file ./data/workers_2015_m4.dta saved
+Year = 2015, Month = 5
+  2,510,816
+  1,775,799
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,507 real changes made)
+(521 real changes made)
+(57,257 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,103,196 bytes saved)
+(file ./data/workers_2015_m5.dta not found)
+file ./data/workers_2015_m5.dta saved
+Year = 2015, Month = 6
+  2,538,748
+  1,713,606
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,253 real changes made)
+(500 real changes made)
+(54,222 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (6,854,424 bytes saved)
+(file ./data/workers_2015_m6.dta not found)
+file ./data/workers_2015_m6.dta saved
+Year = 2015, Month = 7
+  2,562,983
+  1,706,572
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,846 real changes made)
+(509 real changes made)
+(51,446 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (6,826,288 bytes saved)
+(file ./data/workers_2015_m7.dta not found)
+file ./data/workers_2015_m7.dta saved
+Year = 2015, Month = 8
+  2,561,942
+  1,738,108
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,110 real changes made)
+(524 real changes made)
+(51,194 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (6,952,432 bytes saved)
+(file ./data/workers_2015_m8.dta not found)
+file ./data/workers_2015_m8.dta saved
+Year = 2015, Month = 9
+  2,541,410
+  1,754,926
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,175 real changes made)
+(619 real changes made)
+(68,533 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,019,704 bytes saved)
+(file ./data/workers_2015_m9.dta not found)
+file ./data/workers_2015_m9.dta saved
+Year = 2015, Month = 10
+  2,527,232
+  1,764,562
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,142 real changes made)
+(621 real changes made)
+(60,442 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,058,248 bytes saved)
+(file ./data/workers_2015_m10.dta not found)
+file ./data/workers_2015_m10.dta saved
+Year = 2015, Month = 11
+  2,527,344
+  1,790,169
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,798 real changes made)
+(619 real changes made)
+(62,257 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,160,676 bytes saved)
+(file ./data/workers_2015_m11.dta not found)
+file ./data/workers_2015_m11.dta saved
+Year = 2015, Month = 12
+  2,553,685
+  1,832,212
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,514 real changes made)
+(721 real changes made)
+(63,618 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,328,848 bytes saved)
+(file ./data/workers_2015_m12.dta not found)
+file ./data/workers_2015_m12.dta saved
+Year = 2016, Month = 1
+  2,467,132
+  1,761,702
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,501 real changes made)
+(675 real changes made)
+(56,020 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,046,808 bytes saved)
+(file ./data/workers_2016_m1.dta not found)
+file ./data/workers_2016_m1.dta saved
+Year = 2016, Month = 2
+  2,482,926
+  1,787,196
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,756 real changes made)
+(589 real changes made)
+(58,656 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,148,784 bytes saved)
+(file ./data/workers_2016_m2.dta not found)
+file ./data/workers_2016_m2.dta saved
+Year = 2016, Month = 3
+  2,488,892
+  1,797,894
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,896 real changes made)
+(528 real changes made)
+(59,933 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,191,576 bytes saved)
+(file ./data/workers_2016_m3.dta not found)
+file ./data/workers_2016_m3.dta saved
+Year = 2016, Month = 4
+  2,501,805
+  1,790,203
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,582 real changes made)
+(466 real changes made)
+(59,066 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,160,812 bytes saved)
+(file ./data/workers_2016_m4.dta not found)
+file ./data/workers_2016_m4.dta saved
+Year = 2016, Month = 5
+  2,511,960
+  1,807,104
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,216 real changes made)
+(525 real changes made)
+(61,060 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,228,416 bytes saved)
+(file ./data/workers_2016_m5.dta not found)
+file ./data/workers_2016_m5.dta saved
+Year = 2016, Month = 6
+  2,548,395
+  1,791,770
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,797 real changes made)
+(478 real changes made)
+(60,469 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,167,080 bytes saved)
+(file ./data/workers_2016_m6.dta not found)
+file ./data/workers_2016_m6.dta saved
+Year = 2016, Month = 7
+  2,569,605
+  1,824,655
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,035 real changes made)
+(556 real changes made)
+(72,309 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,298,620 bytes saved)
+(file ./data/workers_2016_m7.dta not found)
+file ./data/workers_2016_m7.dta saved
+Year = 2016, Month = 8
+  2,565,083
+  1,823,077
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,014 real changes made)
+(554 real changes made)
+(72,191 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,292,308 bytes saved)
+(file ./data/workers_2016_m8.dta not found)
+file ./data/workers_2016_m8.dta saved
+Year = 2016, Month = 9
+  2,554,535
+  1,841,056
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,267 real changes made)
+(605 real changes made)
+(75,853 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,364,224 bytes saved)
+(file ./data/workers_2016_m9.dta not found)
+file ./data/workers_2016_m9.dta saved
+Year = 2016, Month = 10
+  2,543,155
+  1,845,093
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,331 real changes made)
+(487 real changes made)
+(70,757 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,380,372 bytes saved)
+(file ./data/workers_2016_m10.dta not found)
+file ./data/workers_2016_m10.dta saved
+Year = 2016, Month = 11
+  2,545,108
+  1,844,395
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,358 real changes made)
+(511 real changes made)
+(70,297 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,377,580 bytes saved)
+(file ./data/workers_2016_m11.dta not found)
+file ./data/workers_2016_m11.dta saved
+Year = 2016, Month = 12
+  2,565,305
+  1,865,266
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,829 real changes made)
+(671 real changes made)
+(70,793 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,461,064 bytes saved)
+(file ./data/workers_2016_m12.dta not found)
+file ./data/workers_2016_m12.dta saved
+Year = 2017, Month = 1
+  2,502,136
+  1,823,466
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,674 real changes made)
+(445 real changes made)
+(65,232 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,293,864 bytes saved)
+(file ./data/workers_2017_m1.dta not found)
+file ./data/workers_2017_m1.dta saved
+Year = 2017, Month = 2
+  2,510,085
+  1,835,901
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,133 real changes made)
+(361 real changes made)
+(67,540 real changes made)
+(48,912 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,343,604 bytes saved)
+(file ./data/workers_2017_m2.dta not found)
+file ./data/workers_2017_m2.dta saved
+Year = 2017, Month = 3
+  2,519,788
+  1,832,575
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,200 real changes made)
+(342 real changes made)
+(67,166 real changes made)
+(47,042 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,330,300 bytes saved)
+(file ./data/workers_2017_m3.dta not found)
+file ./data/workers_2017_m3.dta saved
+Year = 2017, Month = 4
+  2,528,195
+  1,858,322
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,408 real changes made)
+(374 real changes made)
+(69,329 real changes made)
+(47,136 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,433,288 bytes saved)
+(file ./data/workers_2017_m4.dta not found)
+file ./data/workers_2017_m4.dta saved
+Year = 2017, Month = 5
+  2,545,528
+  1,847,177
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,219 real changes made)
+(393 real changes made)
+(68,168 real changes made)
+(52,648 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,388,708 bytes saved)
+(file ./data/workers_2017_m5.dta not found)
+file ./data/workers_2017_m5.dta saved
+Year = 2017, Month = 6
+  2,591,553
+  1,858,561
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,448 real changes made)
+(362 real changes made)
+(80,120 real changes made)
+(199,225 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,434,244 bytes saved)
+(file ./data/workers_2017_m6.dta not found)
+file ./data/workers_2017_m6.dta saved
+Year = 2017, Month = 7
+  2,611,804
+  1,881,968
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,675 real changes made)
+(316 real changes made)
+(80,693 real changes made)
+(106,058 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,527,872 bytes saved)
+(file ./data/workers_2017_m7.dta not found)
+file ./data/workers_2017_m7.dta saved
+Year = 2017, Month = 8
+  2,608,532
+  1,883,607
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,564 real changes made)
+(200 real changes made)
+(80,603 real changes made)
+(60,412 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,534,428 bytes saved)
+(file ./data/workers_2017_m8.dta not found)
+file ./data/workers_2017_m8.dta saved
+Year = 2017, Month = 9
+  2,592,787
+  1,889,418
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,626 real changes made)
+(261 real changes made)
+(83,449 real changes made)
+(47,586 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,557,672 bytes saved)
+(file ./data/workers_2017_m9.dta not found)
+file ./data/workers_2017_m9.dta saved
+Year = 2017, Month = 10
+  2,582,629
+  1,881,230
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,577 real changes made)
+(242 real changes made)
+(77,509 real changes made)
+(47,414 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,524,920 bytes saved)
+(file ./data/workers_2017_m10.dta not found)
+file ./data/workers_2017_m10.dta saved
+Year = 2017, Month = 11
+  2,585,926
+  1,887,282
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,456 real changes made)
+(270 real changes made)
+(77,678 real changes made)
+(46,670 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,549,128 bytes saved)
+(file ./data/workers_2017_m11.dta not found)
+file ./data/workers_2017_m11.dta saved
+Year = 2017, Month = 12
+  2,611,607
+  1,913,403
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(6,297 real changes made)
+(323 real changes made)
+(78,630 real changes made)
+(45,347 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,653,612 bytes saved)
+(file ./data/workers_2017_m12.dta not found)
+file ./data/workers_2017_m12.dta saved
+Year = 2018, Month = 1
+  2,541,283
+  1,858,497
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(4,825 real changes made)
+(389 real changes made)
+(71,584 real changes made)
+(86,665 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,433,988 bytes saved)
+(file ./data/workers_2018_m1.dta not found)
+file ./data/workers_2018_m1.dta saved
+Year = 2018, Month = 2
+  2,552,539
+  1,875,179
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,025 real changes made)
+(331 real changes made)
+(73,962 real changes made)
+(48,596 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,500,716 bytes saved)
+(file ./data/workers_2018_m2.dta not found)
+file ./data/workers_2018_m2.dta saved
+Year = 2018, Month = 3
+  2,560,322
+  1,876,429
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(4,991 real changes made)
+(340 real changes made)
+(74,601 real changes made)
+(47,962 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,505,716 bytes saved)
+(file ./data/workers_2018_m3.dta not found)
+file ./data/workers_2018_m3.dta saved
+Year = 2018, Month = 4
+  2,569,042
+  1,878,979
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,098 real changes made)
+(302 real changes made)
+(74,345 real changes made)
+(46,375 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,515,916 bytes saved)
+(file ./data/workers_2018_m4.dta not found)
+file ./data/workers_2018_m4.dta saved
+Year = 2018, Month = 5
+  2,588,564
+  1,890,738
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,267 real changes made)
+(372 real changes made)
+(85,950 real changes made)
+(49,864 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,562,952 bytes saved)
+(file ./data/workers_2018_m5.dta not found)
+file ./data/workers_2018_m5.dta saved
+Year = 2018, Month = 6
+  2,632,110
+  1,893,438
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,163 real changes made)
+(303 real changes made)
+(87,536 real changes made)
+(177,207 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,573,752 bytes saved)
+(file ./data/workers_2018_m6.dta not found)
+file ./data/workers_2018_m6.dta saved
+Year = 2018, Month = 7
+  2,653,885
+  1,911,254
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,311 real changes made)
+(364 real changes made)
+(87,567 real changes made)
+(97,024 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,645,016 bytes saved)
+(file ./data/workers_2018_m7.dta not found)
+file ./data/workers_2018_m7.dta saved
+Year = 2018, Month = 8
+  2,651,503
+  1,922,509
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,426 real changes made)
+(355 real changes made)
+(88,252 real changes made)
+(58,613 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,690,036 bytes saved)
+(file ./data/workers_2018_m8.dta not found)
+file ./data/workers_2018_m8.dta saved
+Year = 2018, Month = 9
+  2,635,218
+  1,928,253
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,360 real changes made)
+(356 real changes made)
+(91,839 real changes made)
+(48,068 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,713,012 bytes saved)
+(file ./data/workers_2018_m9.dta not found)
+file ./data/workers_2018_m9.dta saved
+Year = 2018, Month = 10
+  2,625,828
+  1,911,961
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,337 real changes made)
+(367 real changes made)
+(82,944 real changes made)
+(42,710 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,647,844 bytes saved)
+(file ./data/workers_2018_m10.dta not found)
+file ./data/workers_2018_m10.dta saved
+Year = 2018, Month = 11
+  2,633,163
+  1,924,027
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(5,278 real changes made)
+(335 real changes made)
+(84,058 real changes made)
+(43,081 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,696,108 bytes saved)
+(file ./data/workers_2018_m11.dta not found)
+file ./data/workers_2018_m11.dta saved
+Year = 2018, Month = 12
+  2,655,427
+  1,960,282
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(5,985 real changes made)
+(441 real changes made)
+(85,790 real changes made)
+(41,765 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,841,128 bytes saved)
+(file ./data/workers_2018_m12.dta not found)
+file ./data/workers_2018_m12.dta saved
+Year = 2019, Month = 1
+  2,589,089
+  1,892,805
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,443 real changes made)
+(499 real changes made)
+(77,829 real changes made)
+(82,126 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,571,220 bytes saved)
+(file ./data/workers_2019_m1.dta not found)
+file ./data/workers_2019_m1.dta saved
+Year = 2019, Month = 2
+  2,602,862
+  1,912,865
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,676 real changes made)
+(484 real changes made)
+(81,089 real changes made)
+(45,536 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,651,460 bytes saved)
+(file ./data/workers_2019_m2.dta not found)
+file ./data/workers_2019_m2.dta saved
+Year = 2019, Month = 3
+  2,611,736
+  1,910,962
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(4,567 real changes made)
+(481 real changes made)
+(80,902 real changes made)
+(44,493 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,643,848 bytes saved)
+(file ./data/workers_2019_m3.dta not found)
+file ./data/workers_2019_m3.dta saved
+Year = 2019, Month = 4
+  2,622,828
+  1,924,232
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,269 real changes made)
+(466 real changes made)
+(81,954 real changes made)
+(44,265 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,696,928 bytes saved)
+(file ./data/workers_2019_m4.dta not found)
+file ./data/workers_2019_m4.dta saved
+Year = 2019, Month = 5
+  2,638,988
+  1,925,504
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,227 real changes made)
+(493 real changes made)
+(81,907 real changes made)
+(47,175 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,702,016 bytes saved)
+(file ./data/workers_2019_m5.dta not found)
+file ./data/workers_2019_m5.dta saved
+Year = 2019, Month = 6
+  2,678,346
+  1,936,586
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,196 real changes made)
+(492 real changes made)
+(96,028 real changes made)
+(169,564 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,746,344 bytes saved)
+(file ./data/workers_2019_m6.dta not found)
+file ./data/workers_2019_m6.dta saved
+Year = 2019, Month = 7
+  2,700,626
+  1,947,486
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,233 real changes made)
+(505 real changes made)
+(94,745 real changes made)
+(90,391 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,789,944 bytes saved)
+(file ./data/workers_2019_m7.dta not found)
+file ./data/workers_2019_m7.dta saved
+Year = 2019, Month = 8
+  2,697,609
+  1,966,351
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,331 real changes made)
+(557 real changes made)
+(96,600 real changes made)
+(57,096 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,865,404 bytes saved)
+(file ./data/workers_2019_m8.dta not found)
+file ./data/workers_2019_m8.dta saved
+Year = 2019, Month = 9
+  2,677,174
+  1,957,905
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,284 real changes made)
+(536 real changes made)
+(97,545 real changes made)
+(46,018 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,831,620 bytes saved)
+(file ./data/workers_2019_m9.dta not found)
+file ./data/workers_2019_m9.dta saved
+Year = 2019, Month = 10
+  2,670,198
+  1,947,535
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,301 real changes made)
+(517 real changes made)
+(57,275 real changes made)
+(42,326 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,790,140 bytes saved)
+(file ./data/workers_2019_m10.dta not found)
+file ./data/workers_2019_m10.dta saved
+Year = 2019, Month = 11
+  2,669,766
+  1,959,656
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,364 real changes made)
+(500 real changes made)
+(57,805 real changes made)
+(43,526 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,838,624 bytes saved)
+(file ./data/workers_2019_m11.dta not found)
+file ./data/workers_2019_m11.dta saved
+Year = 2019, Month = 12
+  2,683,762
+  1,981,279
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,815 real changes made)
+(575 real changes made)
+(57,915 real changes made)
+(41,448 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,925,116 bytes saved)
+(file ./data/workers_2019_m12.dta not found)
+file ./data/workers_2019_m12.dta saved
+Year = 2020, Month = 1
+  2,618,600
+  1,927,494
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(4,090 real changes made)
+(519 real changes made)
+(54,065 real changes made)
+(79,053 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,709,976 bytes saved)
+(file ./data/workers_2020_m1.dta not found)
+file ./data/workers_2020_m1.dta saved
+Year = 2020, Month = 2
+  2,632,419
+  1,943,402
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,736 real changes made)
+(549 real changes made)
+(55,506 real changes made)
+(45,279 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,773,608 bytes saved)
+(file ./data/workers_2020_m2.dta not found)
+file ./data/workers_2020_m2.dta saved
+Year = 2020, Month = 3
+  2,628,719
+  1,927,141
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,283 real changes made)
+(605 real changes made)
+(54,318 real changes made)
+(46,651 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,708,564 bytes saved)
+(file ./data/workers_2020_m3.dta not found)
+file ./data/workers_2020_m3.dta saved
+Year = 2020, Month = 4
+  2,574,525
+  1,888,260
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,227 real changes made)
+(604 real changes made)
+(51,929 real changes made)
+(94,287 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,553,040 bytes saved)
+(file ./data/workers_2020_m4.dta not found)
+file ./data/workers_2020_m4.dta saved
+Year = 2020, Month = 5
+  2,565,178
+  1,893,894
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,226 real changes made)
+(631 real changes made)
+(52,153 real changes made)
+(109,364 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,575,576 bytes saved)
+(file ./data/workers_2020_m5.dta not found)
+file ./data/workers_2020_m5.dta saved
+Year = 2020, Month = 6
+  2,572,293
+  1,892,116
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,204 real changes made)
+(665 real changes made)
+(61,959 real changes made)
+(167,274 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,568,464 bytes saved)
+(file ./data/workers_2020_m6.dta not found)
+file ./data/workers_2020_m6.dta saved
+Year = 2020, Month = 7
+  2,604,598
+  1,909,038
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,397 real changes made)
+(625 real changes made)
+(63,779 real changes made)
+(92,449 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,636,152 bytes saved)
+(file ./data/workers_2020_m7.dta not found)
+file ./data/workers_2020_m7.dta saved
+Year = 2020, Month = 8
+  2,621,194
+  1,942,175
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,247 real changes made)
+(645 real changes made)
+(66,361 real changes made)
+(55,638 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,768,700 bytes saved)
+(file ./data/workers_2020_m8.dta not found)
+file ./data/workers_2020_m8.dta saved
+Year = 2020, Month = 9
+  2,616,874
+  1,930,180
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(3,171 real changes made)
+(695 real changes made)
+(67,992 real changes made)
+(44,767 missing values generated)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,720,720 bytes saved)
+(file ./data/workers_2020_m9.dta not found)
+file ./data/workers_2020_m9.dta saved
+Year = 2020, Month = 10
+  2,617,129
+  1,930,704
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,131 real changes made)
+(716 real changes made)
+(53,348 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,722,816 bytes saved)
+(file ./data/workers_2020_m10.dta not found)
+file ./data/workers_2020_m10.dta saved
+Year = 2020, Month = 11
+  2,625,579
+  1,937,344
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,144 real changes made)
+(728 real changes made)
+(53,392 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,749,376 bytes saved)
+(file ./data/workers_2020_m11.dta not found)
+file ./data/workers_2020_m11.dta saved
+Year = 2020, Month = 12
+  2,645,853
+  1,947,382
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,335 real changes made)
+(788 real changes made)
+(52,959 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,789,528 bytes saved)
+(file ./data/workers_2020_m12.dta not found)
+file ./data/workers_2020_m12.dta saved
+Year = 2021, Month = 1
+  2,576,268
+  1,913,385
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(2,933 real changes made)
+(846 real changes made)
+(50,482 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,653,540 bytes saved)
+(file ./data/workers_2021_m1.dta not found)
+file ./data/workers_2021_m1.dta saved
+Year = 2021, Month = 2
+  2,570,000
+  1,911,794
+fnr was double now str12
+pers_kjoenn: all characters numeric; replaced as byte
+(3,043 real changes made)
+(900 real changes made)
+(50,375 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,647,176 bytes saved)
+(file ./data/workers_2021_m2.dta not found)
+file ./data/workers_2021_m2.dta saved
+Year = 2021, Month = 3
+  2,577,240
+  1,909,432
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(2,988 real changes made)
+(942 real changes made)
+(50,616 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,637,728 bytes saved)
+(file ./data/workers_2021_m3.dta not found)
+file ./data/workers_2021_m3.dta saved
+Year = 2021, Month = 4
+  2,578,721
+  1,922,451
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(973 real changes made)
+(50,960 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,689,804 bytes saved)
+(file ./data/workers_2021_m4.dta not found)
+file ./data/workers_2021_m4.dta saved
+Year = 2021, Month = 5
+  2,593,099
+  1,938,002
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(937 real changes made)
+(60,853 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,752,008 bytes saved)
+(file ./data/workers_2021_m5.dta not found)
+file ./data/workers_2021_m5.dta saved
+Year = 2021, Month = 6
+  2,648,694
+  1,948,060
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(906 real changes made)
+(62,977 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,792,240 bytes saved)
+(file ./data/workers_2021_m6.dta not found)
+file ./data/workers_2021_m6.dta saved
+Year = 2021, Month = 7
+  2,699,582
+  1,985,043
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(966 real changes made)
+(64,633 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,940,172 bytes saved)
+(file ./data/workers_2021_m7.dta not found)
+file ./data/workers_2021_m7.dta saved
+Year = 2021, Month = 8
+  2,701,248
+  1,999,567
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(923 real changes made)
+(65,936 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,998,268 bytes saved)
+(file ./data/workers_2021_m8.dta not found)
+file ./data/workers_2021_m8.dta saved
+Year = 2021, Month = 9
+  2,701,382
+  1,993,316
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(962 real changes made)
+(68,006 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,973,264 bytes saved)
+(file ./data/workers_2021_m9.dta not found)
+file ./data/workers_2021_m9.dta saved
+Year = 2021, Month = 10
+  2,702,114
+  1,998,682
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(1,020 real changes made)
+(70,834 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,994,728 bytes saved)
+(file ./data/workers_2021_m10.dta not found)
+file ./data/workers_2021_m10.dta saved
+Year = 2021, Month = 11
+  2,713,419
+  1,999,623
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(1,130 real changes made)
+(72,975 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,998,492 bytes saved)
+(file ./data/workers_2021_m11.dta not found)
+file ./data/workers_2021_m11.dta saved
+Year = 2021, Month = 12
+  2,735,522
+  2,016,216
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(1,430 real changes made)
+(75,070 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (8,064,864 bytes saved)
+(file ./data/workers_2021_m12.dta not found)
+file ./data/workers_2021_m12.dta saved
+Year = 2022, Month = 1
+  2,673,293
+  1,979,428
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(1,103 real changes made)
+(72,749 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,917,712 bytes saved)
+(file ./data/workers_2022_m1.dta not found)
+file ./data/workers_2022_m1.dta saved
+Year = 2022, Month = 2
+  2,683,271
+  1,990,431
+fnr was double now str11
+pers_kjoenn: all characters numeric; replaced as byte
+(0 real changes made)
+(1,027 real changes made)
+(75,819 real changes made)
+  variable date was float now int
+  variable pers_alder was int now byte
+  variable pers_invkat was str2 now str1
+  (7,961,724 bytes saved)
+(file ./data/workers_2022_m2.dta not found)
+file ./data/workers_2022_m2.dta saved
+Year = 2022, Month = 3
+Year = 2022, Month = 4
+Year = 2022, Month = 5
+Year = 2022, Month = 6
+Year = 2022, Month = 7
+Year = 2022, Month = 8
+Year = 2022, Month = 9
+Year = 2022, Month = 10
+Year = 2022, Month = 11
+Year = 2022, Month = 12
+
+. 
+. // append files 
+. clear all
+
+. save ${data}/workers.dta, emptyok replace
+(dataset contains 0 observations)
+(file ./data/workers.dta not found)
+file ./data/workers.dta saved
+
+. forvalues t = 2015 / 2022 {
+  2.         forvalues m = 1 / 12 {
+  3.                 cap append using ${data}/workers_`t'_m`m'.dta
+  4.                 if _rc continue
+  5.                 ! rm ${data}/workers_`t'_m`m'.dta
+  6.         }
+  7. }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+. 
+. local sample_coverage = round(`nobs_sample' / `nobs_pop' * 100, .01) 
+
+. di "Selected sample covers " `sample_coverage' "% of the population"  
+Selected sample covers 72.58% of the population
+
+. scalar sample_coverage = `sample_coverage'
+
+. 
+. // impute missing obs on education using within-person mode
+. preserve                
+
+.         keep fnr pers_bu_nus2000
+
+.         bys fnr: egen mode_pers_bu_nus2000 = mode(pers_bu_nus2000), maxmode     
+Warning: at least one group contains all missing values or contains multiple modes.  Generating missing values for the mode of these groups.
+Use the missing, maxmode, minmode, or nummode() options to control this behavior.
+(4,135,290 missing values generated)
+
+.         drop pers_bu_nus2000 
+
+.         rename mode_* *
+
+.         duplicates drop
+
+Duplicates in terms of all variables
+
+(158,556,869 observations deleted)
+
+.         tempfile edu_update
+
+.         save `edu_update', replace 
+(file /tmp/St42221.000002 not found)
+file /tmp/St42221.000002 saved as .dta format
+
+. restore
+
+. merge m:1 fnr using `edu_update', update
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+
+    Matched                       161,770,918
+        not updated               153,655,548  (_merge==3)
+        missing updated             2,092,387  (_merge==4)
+        nonmissing conflict         6,022,983  (_merge==5)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. // document missing information on education, occupation and industry
+. preserve                        
+
+.         gen mi_edu  = missing(pers_bu_nus2000)
+
+.         gen mi_occ  = missing(arb_yrke_styrk08)
+
+.         gen mi_nace = missing(virk_nace1_sn07)
+
+.         collapse (mean) mi_edu mi_occ mi_nace, by(date)
+
+.         label var mi_edu  "Education"
+
+.         label var mi_occ  "Occupation"
+
+.         label var mi_nace "Industry"
+
+.         sort date
+
+.         export excel using ${tables}/summary.xls, sheet("missings", replace) firstrow(varl) datestring("%tm")
+file ./out/tables/summary.xls saved
+
+. 
+.         twoway (line mi_edu  date, lpattern(solid)) ///
+>         (line mi_occ  date, lpattern(dash)) ///
+>         (line mi_nace date, lpattern(dot)), ///
+>         graphregion(color(white)) ///
+>         xlabel(660(12)745, format(%tmCY) grid) ///
+>         ylabel(, format(%9.2f) grid) ///
+>         xtitle("Year") ///
+>         ytitle("Share of missing observations") ///
+>         title("{fontface Roboto Condensed Bold: Missings}")
+
+.         graph export ${figures}/missings.pdf, replace
+file ./out/figures/missings.pdf saved as PDF format
+
+. restore 
+
+. local N0 = _N
+
+. drop if missing(pers_bu_nus2000) | missing(arb_yrke_styrk08) | missing(virk_nace1_sn07)
+(4,531,996 observations deleted)
+
+. local N1 = _N 
+
+. di "Missings dropped: " ((`N0' - `N1') / `N0') * 100 " %" 
+Missings dropped: 2.8014899 %
+
+. compress
+  (0 bytes saved)
+
+. save ${data}/workers.dta, replace
+file ./data/workers.dta saved
+
+.         
+. // Education, occupation and industry codes ------------------------------------
+. 
+. // occupational licensing
+. // note: we use the the NOR-Database financed by the Research Council of Norway 
+. // (grant no. 237039). The data are collected and distributed by OsloMet. 
+. // The database provides a mapping from the 7 digit Styrk 98 occupation classifications
+. // to a binary indicator for licensed occupations.
+. // We then do two steps to get a binary indicator for the Styrk08 4 digits 
+. // occupations. First, we use a mapping between the Styrk98 to Styrk08 
+. // classifications provided by SSB. Second, we use the mode to indicate 
+. // a licensed occupation, since for any styrk08 occupation, there may exist
+. // more than one Styrk98 occupation.  
+. use yrk_kode licence_dummy using ${data}/nordatabase_lic.dta, clear
+
+. rename yrk_kode styrk98
+
+. keep if strlen(styrk98) == 7
+(351 observations deleted)
+
+. tempfile lic_database
+
+. save `lic_database', replace 
+(file /tmp/St42221.000004 not found)
+file /tmp/St42221.000004 saved as .dta format
+
+. use ${data}/codes_styrk98_08.dta, clear
+
+. merge 1:1 styrk98 using `lic_database', keep(master match) nogen 
+(variable styrk98 was str7, now str8 to accommodate using data's values)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                           324
+        from master                       324  
+        from using                          0  
+
+    Matched                             6,649  
+    -----------------------------------------
+
+. replace licence_dummy = 0 if licence_dummy != 1
+(6,037 real changes made)
+
+. bys styrk08: egen licensed = mode(licence_dummy), maxmode
+
+. duplicates drop styrk08, force
+
+Duplicates in terms of styrk08
+
+(6,570 observations deleted)
+
+. keep styrk08 licensed
+
+. rename styrk08 occ_4
+
+. save `lic_database', replace    
+file /tmp/St42221.000004 saved as .dta format
+
+. 
+. // occupation codes: 1 and 4 digit level  
+. foreach l of numlist 1 4 {
+  2.         use ${data}/codes_styrk08.dta, clear
+  3.         keep if strlen(styrk08) == `l'
+  4.         gen occ_`l' = styrk08
+  5.         gen occ_`l'_label = name_nor
+  6.         keep occ*
+  7.         if `l' == 4 { // add license dummy
+  8.                 merge 1:1 occ_4 using `lic_database', nogen 
+  9.                 replace licensed = 0 if missing(licensed) == 1  // code as non-licensed if not matched
+ 10.         }       
+ 11.         save ${data}/occ_`l'_digits, replace
+ 12. }
+(572 observations deleted)
+(file ./data/occ_1_digits.dta not found)
+file ./data/occ_1_digits.dta saved
+(175 observations deleted)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             4
+        from master                         4  
+        from using                          0  
+
+    Matched                               403  
+    -----------------------------------------
+(4 real changes made)
+(file ./data/occ_4_digits.dta not found)
+file ./data/occ_4_digits.dta saved
+
+. 
+. 
+. // education codes: 1 and 3 digit level
+. foreach l of numlist 1 3 {
+  2.         use ${data}/codes_nus.dta, clear
+  3.         keep if strlen(nus) == `l'
+  4.         gen edu_`l' = nus
+  5.         gen edu_`l'_label = name_nor
+  6.         keep edu*
+  7.         save ${data}/edu_`l'_digits, replace
+  8. }
+(4,593 observations deleted)
+(file ./data/edu_1_digits.dta not found)
+file ./data/edu_1_digits.dta saved
+(4,253 observations deleted)
+(file ./data/edu_3_digits.dta not found)
+file ./data/edu_3_digits.dta saved
+
+. 
+. // industry classifications
+. use ${data}/codes_sn2007.dta, clear
+
+. keep if inrange(substr(code,1,1), "A","Y")
+(1,790 observations deleted)
+
+. keep code shortname 
+
+. rename shortname nace_1_label
+
+. save ${data}/nace_1_digits, replace
+(file ./data/nace_1_digits.dta not found)
+file ./data/nace_1_digits.dta saved
+
+. use ${data}/codes_sn2007.dta, clear
+
+. keep if inrange(substr(parentcode,1,1), "A","Y")
+(1,724 observations deleted)
+
+. keep code parentcode
+
+. rename code code_child
+
+. rename parentcode code
+
+. merge m:1 code using ${data}/nace_1_digits, assert(match) nogen noreport
+(variable code was str5, now str6 to accommodate using data's values)
+
+. rename code nace_1 
+
+. rename code_child nace_2
+
+. // aggregate some smaller industries into one category
+. replace nace_1_label = "Øvrige/mangler" if inlist(nace_1, "A", "B", "D", "E", "K") | inlist(nace_1, "L", "R", "S", "T", "U") 
+(26 real changes made)
+
+. replace nace_1 = "Z" if inlist(nace_1, "A", "B", "D", "E", "K") | inlist(nace_1, "L", "R", "S", "T", "U") 
+(26 real changes made)
+
+. save ${data}/nace_1_digits, replace
+file ./data/nace_1_digits.dta saved
+
+. 
+. 
+. 
+end of do-file
+
+. 
+. // descriptive analysis
+. do ${src}/summary.do
+
+. /*==============================================================================
+>                            SUMMARY STATISTICS                                                                              
+> ==============================================================================*/
+. 
+. // Worker-month level observations
+. use ${data}/workers, clear
+
+. 
+. // education, occupation and industry (1-digit)
+. gen edu_1  = substr(pers_bu_nus2000,1,1)
+
+. gen occ_1  = substr(arb_yrke_styrk08,1,1)
+
+. gen nace_2 = substr(virk_nace1_sn07,1,2)
+
+. merge m:1 nace_2 using ${data}/nace_1_digits, keep(master match) keepusing(nace_1) nogen
+(variable nace_2 was str2, now str6 to accommodate using data's values)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                       157,238,922  
+    -----------------------------------------
+
+. drop nace_2
+
+. 
+. // descriptive statistics
+. tabstat pers_alder lonn, s(mean semean median sd min max p1 p99 n) columns(s) save
+
+    Variable |      Mean  se(mean)       p50        SD       Min       Max        p1       p99         N
+-------------+------------------------------------------------------------------------------------------
+  pers_alder |  42.42796      .001        43   12.5394        16        74        18        67  1.57e+08
+        lonn |  45865.29  11.71266  42051.34  145511.6 -9.94e+07  5.45e+08  -5302.61  120363.4  1.54e+08
+--------------------------------------------------------------------------------------------------------
+
+. return list 
+
+matrices:
+          r(StatTotal) :  9 x 2
+
+. putexcel set ${tables}/summary.xls, sheet("age, lonn", replace) modify
+
+. putexcel A1 = matrix(r(StatTotal)), names 
+file ./out/tables/summary.xls saved
+
+. preserve
+
+.         contract pers_kjoenn, freq(freq) percent(perc)
+
+.         export excel using ${tables}/summary.xls, sheet("kjonn", replace)
+file ./out/tables/summary.xls saved
+
+. restore 
+
+. preserve
+
+.         contract edu_1, freq(freq) percent(perc)
+
+.         merge 1:1 edu_1 using ${data}/edu_1_digits, keep(master match) keepusing(edu_1_label) nogen noreport
+
+.         order edu_1 edu_1_label
+
+.         export excel using ${tables}/summary.xls, sheet("education", replace)
+file ./out/tables/summary.xls saved
+
+. restore 
+
+. preserve
+
+.         contract occ_1, freq(freq) percent(perc)
+
+.         merge 1:1 occ_1  using ${data}/occ_1_digits,  keep(master match) keepusing(occ_1_label) nogen noreport
+
+.         order occ_1 occ_1_label
+
+.         export excel using ${tables}/summary.xls, sheet("occupation", replace)
+file ./out/tables/summary.xls saved
+
+. restore 
+
+. preserve
+
+.         contract nace_1, freq(freq) percent(perc)
+
+.         export excel using ${tables}/summary.xls, sheet("industry", replace)
+file ./out/tables/summary.xls saved
+
+. restore 
+
+. exit
+
+end of do-file
+
+. do ${src}/counts.do
+
+. /*==============================================================================
+>                                 COUNTS
+> ==============================================================================*/
+. 
+. // Worker-month level observations
+. use ${data}/workers, clear
+
+. 
+. // education, occupation, and industry
+. gen edu_3  = substr(pers_bu_nus2000,1,3)
+
+. gen occ_4  = substr(arb_yrke_styrk08,1,4)
+
+. gen nace_2 = substr(virk_nace1_sn07,1,2)  
+
+. 
+. // aggregate education
+. // note: aggregate first digit, taking together, for example, digits 6, 7, and 8
+. // implies that we group together those with and undergraduate, graduate and post-graduate degree.
+. replace edu_3 = "7" + substr(edu_3, 2, 3) if (substr(edu_3, 1, 1) == "6" | substr(edu_3, 1, 1) == "8") 
+(50,319,531 real changes made)
+
+. replace edu_3 = "4" + substr(edu_3, 2, 3) if (substr(edu_3, 1, 1) == "3" | substr(edu_3, 1, 1) == "5")
+(13,073,885 real changes made)
+
+. 
+. // aggregate industries
+. merge m:1 nace_2 using ${data}/nace_1_digits.dta, nogen keepusing(nace_1) keep(master match)
+(variable nace_2 was str2, now str6 to accommodate using data's values)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                       157,238,922  
+    -----------------------------------------
+
+. drop nace_2
+
+. 
+. // average number of workers within an education / occupation cell, monthly 
+. preserve
+
+.         contract date edu_3 occ_4, freq(freq)
+
+.         fillin date edu_3 occ_4 // rectangularize dataset, and add zeros
+
+.         replace freq = 0 if _fillin == 1 
+(2,288,299 real changes made)
+
+.         collapse (mean) nobs = freq, by(occ_4 edu_3)
+
+.         drop if nobs == 0 // dropping cells with 0 obs across all periods
+(19,459 observations deleted)
+
+.         save ${data}/nobs_occ_edu.dta, replace
+(file ./data/nobs_occ_edu.dta not found)
+file ./data/nobs_occ_edu.dta saved
+
+. restore
+
+. 
+. // average number of workers within an education / occupation / industry cell, monthly 
+. preserve
+
+.         contract date edu_3 occ_4 nace_1, freq(freq)
+
+.         fillin date edu_3 occ_4 nace_1 // rectangularize dataset, and add zeros
+
+.         replace freq = 0 if _fillin == 1 
+(44,716,483 real changes made)
+
+.         collapse (mean) nobs = freq, by(occ_4 edu_3 nace_1)
+
+.         drop if nobs == 0 // dropping cells with 0 obs across all periods
+(464,927 observations deleted)
+
+.         save ${data}/nobs_occ_edu_nace.dta, replace
+(file ./data/nobs_occ_edu_nace.dta not found)
+file ./data/nobs_occ_edu_nace.dta saved
+
+. restore
+
+.  
+. 
+end of do-file
+
+. do ${src}/modes.do
+
+. /*==============================================================================
+>                             MODES
+> ==============================================================================*/
+. 
+. // Worker-month level observations
+. use ${data}/workers, clear
+
+. 
+. // education, occupation, and industry
+. gen edu_3  = substr(pers_bu_nus2000,1,3)
+
+. gen occ_4  = substr(arb_yrke_styrk08,1,4)
+
+. gen nace_2 = substr(virk_nace1_sn07,1,2)  
+
+. 
+. // aggregate education
+. // note: aggregate first digit, taking together, for example, digits 6, 7, and 8
+. // implies that we group together those with and undergraduate, graduate and post-graduate degree.
+. replace edu_3 = "7" + substr(edu_3, 2, 3) if (substr(edu_3, 1, 1) == "6" | substr(edu_3, 1, 1) == "8") 
+(50,319,531 real changes made)
+
+. replace edu_3 = "4" + substr(edu_3, 2, 3) if (substr(edu_3, 1, 1) == "3" | substr(edu_3, 1, 1) == "5")
+(13,073,885 real changes made)
+
+. 
+. // aggregate industries
+. merge m:1 nace_2 using ${data}/nace_1_digits.dta, nogen keepusing(nace_1) keep(master match)
+(variable nace_2 was str2, now str6 to accommodate using data's values)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                       157,238,922  
+    -----------------------------------------
+
+. drop nace_2
+
+. 
+. // modal education within occupation
+. preserve 
+
+.         contract edu_3 occ_4, freq(freq) 
+
+.         egen freq_occ    = sum(freq), by(occ_4)
+
+.         gen percent      = (freq / freq_occ) * 100 
+
+.         egen max_percent = max(percent), by(occ_4)
+
+.         gen mode         = cond(max_percent == percent, 1, 0)
+
+.         keep if mode == 1
+(29,584 observations deleted)
+
+.         keep occ_4 edu_3 freq percent
+
+.         duplicates drop occ_4, force // if there exists more than one mode 
+
+Duplicates in terms of occ_4
+
+(1 observation deleted)
+
+.         merge m:1 edu_3  using ${data}/edu_3_digits,  keep(master match) keepusing(edu_3_label) nogen 
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                               402  
+    -----------------------------------------
+
+.         merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                               402  
+    -----------------------------------------
+
+.         order occ_4 occ_4_label licensed edu_3 edu_3_label freq percent
+
+.         gsort -percent
+
+.         save ${data}/mode_edu_within_occ.dta, replace
+(file ./data/mode_edu_within_occ.dta not found)
+file ./data/mode_edu_within_occ.dta saved
+
+. restore
+
+. 
+. // modal education within occupation / industry cells
+. preserve 
+
+.         contract edu_3 occ_4 nace_1, freq(freq) 
+
+.         egen freq_occ_nace = sum(freq), by(occ_4 nace_1)
+
+.         gen percent        = (freq / freq_occ_nace) * 100 
+
+.         egen max_percent   = max(percent), by(occ_4 nace_1)
+
+.         gen mode           = cond(max_percent == percent, 1, 0)
+
+.         keep if mode == 1
+(124,169 observations deleted)
+
+.         keep occ_4 nace_1 edu_3 freq percent
+
+.         duplicates drop occ_4 nace_1, force // if there exists more than one mode 
+
+Duplicates in terms of occ_4 nace_1
+
+(49 observations deleted)
+
+.         merge m:1 edu_3  using ${data}/edu_3_digits,  keep(master match) keepusing(edu_3_label) nogen 
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                             4,207  
+    -----------------------------------------
+
+.         merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                             4,207  
+    -----------------------------------------
+
+.         merge m:m nace_1 using ${data}/nace_1_digits, keep(master match) keepusing(nace_1_label) nogen // m:m merge is ok here
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                             4,207  
+    -----------------------------------------
+
+.         order occ_4 occ_4_label licensed nace_1 nace_1_label edu_3 edu_3_label freq percent
+
+.         gsort -percent
+
+.         save ${data}/mode_edu_within_occ_nace.dta, replace
+(file ./data/mode_edu_within_occ_nace.dta not found)
+file ./data/mode_edu_within_occ_nace.dta saved
+
+. restore
+
+. 
+. // modal occupation within education
+. preserve 
+
+.         contract edu_3 occ_4, freq(freq) 
+
+.         egen freq_edu    = sum(freq), by(edu_3)
+
+.         gen percent      = (freq / freq_edu) * 100 
+
+.         egen max_percent = max(percent), by(edu_3)
+
+.         gen mode         = cond(max_percent == percent, 1, 0)
+
+.         keep if mode == 1
+(29,864 observations deleted)
+
+.         keep occ_4 edu_3 freq percent
+
+.         duplicates drop edu_3, force // if there exists more than one mode
+
+Duplicates in terms of edu_3
+
+(0 observations are duplicates)
+
+.         merge m:1 edu_3  using ${data}/edu_3_digits,  keep(master match) keepusing(edu_3_label) nogen 
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                               123  
+    -----------------------------------------
+
+.         merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                               123  
+    -----------------------------------------
+
+.         order edu_3 edu_3_label occ_4 occ_4_label licensed freq percent
+
+.         gsort -percent
+
+.         save ${data}/mode_occ_within_edu.dta, replace
+(file ./data/mode_occ_within_edu.dta not found)
+file ./data/mode_occ_within_edu.dta saved
+
+. restore
+
+. 
+. // modal occupation within education / industry cells
+. preserve 
+
+.         contract edu_3 occ_4 nace_1, freq(freq) 
+
+.         egen freq_edu_nace = sum(freq), by(edu_3 nace_1)
+
+.         gen percent        = (freq / freq_edu_nace) * 100 
+
+.         egen max_percent   = max(percent), by(edu_3 nace_1)
+
+.         gen mode           = cond(max_percent == percent, 1, 0)
+
+.         keep if mode == 1
+(127,040 observations deleted)
+
+.         keep occ_4 edu_3 nace_1 freq percent
+
+.         duplicates drop edu_3 nace_1, force // if there exists more than one mode
+
+Duplicates in terms of edu_3 nace_1
+
+(5 observations deleted)
+
+.         merge m:1 edu_3  using ${data}/edu_3_digits,  keep(master match) keepusing(edu_3_label) nogen 
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                             1,380  
+    -----------------------------------------
+
+.         merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                             1,380  
+    -----------------------------------------
+
+.         merge m:m nace_1 using ${data}/nace_1_digits, keep(master match) keepusing(nace_1_label) nogen // m:m merge is ok here
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                             1,380  
+    -----------------------------------------
+
+.         order edu_3 edu_3_label nace_1 nace_1_label occ_4 occ_4_label licensed freq percent
+
+.         gsort -percent
+
+.         save ${data}/mode_occ_within_edu_nace.dta, replace
+(file ./data/mode_occ_within_edu_nace.dta not found)
+file ./data/mode_occ_within_edu_nace.dta saved
+
+. restore
+
+. 
+. exit
+
+end of do-file
+
+. do ${src}/concentration.do
+
+. /*==============================================================================
+>                             CONCENTRATION
+> ==============================================================================*/
+. 
+. // Worker-month level observations
+. use ${data}/workers, clear
+
+. 
+. // education, occupation, and industry
+. gen edu_3  = substr(pers_bu_nus2000,1,3)
+
+. gen occ_4  = substr(arb_yrke_styrk08,1,4)
+
+. gen nace_2 = substr(virk_nace1_sn07,1,2)  
+
+. 
+. // aggregate education
+. // note: aggregate first digit, taking together, for example, digits 6, 7, and 8
+. // implies that we group together those with and undergraduate, graduate and post-graduate degree.
+. replace edu_3 = "7" + substr(edu_3, 2, 3) if (substr(edu_3, 1, 1) == "6" | substr(edu_3, 1, 1) == "8") 
+(50,319,531 real changes made)
+
+. replace edu_3 = "4" + substr(edu_3, 2, 3) if (substr(edu_3, 1, 1) == "3" | substr(edu_3, 1, 1) == "5")
+(13,073,885 real changes made)
+
+. 
+. // aggregate industries
+. merge m:1 nace_2 using ${data}/nace_1_digits.dta, nogen keepusing(nace_1) keep(master match)
+(variable nace_2 was str2, now str6 to accommodate using data's values)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                       157,238,922  
+    -----------------------------------------
+
+. drop nace_2
+
+. 
+. // concentration of education within occupations, Herfindahl index
+. preserve
+
+.         contract date edu_3 occ_4, freq(freq)
+
+.         egen freq_occ = sum(freq), by(date occ_4)  
+
+.         gen s2 = (100 * (freq / freq_occ))^2
+
+.         collapse (sum) hhi = s2 (last) freq_occ, by(date occ_4) 
+
+.         merge m:1 occ_4  using ${data}/occ_4_digits, keep(master match) keepusing(occ_4_label licensed) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                            34,142  
+    -----------------------------------------
+
+.         gen concentrated = cond(hhi >= 2500, 1, 0)
+
+.         order date occ_4 occ_4_label licensed hhi concentrated freq_occ
+
+.         sort occ_4 date
+
+.         save ${data}/hhi_edu_within_occ.dta, replace
+(file ./data/hhi_edu_within_occ.dta not found)
+file ./data/hhi_edu_within_occ.dta saved
+
+. restore 
+
+. 
+. // concentration of education within occupations / industries, Herfindahl index
+. preserve
+
+.         contract date edu_3 occ_4 nace_1, freq(freq)
+
+.         egen freq_occ_nace = sum(freq), by(date occ_4 nace_1)
+
+.         gen s2 = (100 * (freq / freq_occ_nace))^2
+
+.         collapse (sum) hhi = s2 (last) freq_occ_nace, by(date occ_4 nace_1) 
+
+.         merge m:1 occ_4  using ${data}/occ_4_digits,  keep(master match) keepusing(occ_4_label licensed) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                           298,271  
+    -----------------------------------------
+
+.         merge m:m nace_1 using ${data}/nace_1_digits, keep(master match) keepusing(nace_1_label) nogen // m:m merge is ok here
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                           298,271  
+    -----------------------------------------
+
+.         gen concentrated = cond(hhi >= 2500, 1, 0)
+
+.         order date nace_1 nace_1_label occ_4 occ_4_label licensed hhi concentrated freq_occ_nace
+
+.         sort occ_4 nace_1 date
+
+.         save ${data}/hhi_edu_within_occ_nace.dta, replace
+(file ./data/hhi_edu_within_occ_nace.dta not found)
+file ./data/hhi_edu_within_occ_nace.dta saved
+
+. restore 
+
+. 
+. // concentration of occupation within education, Herfindahl index
+. preserve
+
+.         contract date edu_3 occ_4, freq(freq)
+
+.         egen freq_edu = sum(freq), by(date edu_3)
+
+.         gen s2 = (100 * (freq / freq_edu))^2
+
+.         collapse (sum) hhi = s2 (last) freq_edu, by(date edu_3)
+
+.         merge m:1 edu_3 using ${data}/edu_3_digits, keep(master match) keepusing(edu_3_label) nogen 
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                            10,515  
+    -----------------------------------------
+
+.         gen concentrated = cond(hhi >= 2500, 1, 0)
+
+.         order date edu_3 edu_3_label hhi concentrated freq_edu
+
+.         sort edu_3 date
+
+.         save ${data}/hhi_occ_within_edu.dta, replace
+(file ./data/hhi_occ_within_edu.dta not found)
+file ./data/hhi_occ_within_edu.dta saved
+
+. restore 
+
+. 
+. // concentration of occupation within education / industries, Herfindahl index
+. preserve
+
+.         contract date edu_3 occ_4 nace_1, freq(freq)
+
+.         egen freq_edu_nace = sum(freq), by(date edu_3 nace_1)
+
+.         gen s2 = (100 * (freq / freq_edu_nace))^2
+
+.         collapse (sum) hhi = s2 (last) freq_edu_nace, by(date edu_3 nace_1)
+
+.         merge m:1 edu_3  using ${data}/edu_3_digits, keep(master match) keepusing(edu_3_label) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                           112,362  
+    -----------------------------------------
+
+.         merge m:m nace_1 using ${data}/nace_1_digits, keep(master match) keepusing(nace_1_label) nogen // m:m merge is ok here
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                           112,362  
+    -----------------------------------------
+
+.         gen concentrated = cond(hhi >= 2500, 1, 0)
+
+.         order date nace_1 nace_1_label edu_3 edu_3_label hhi concentrated freq_edu_nace
+
+.         sort edu_3 nace_1 date
+
+.         save ${data}/hhi_occ_within_edu_nace.dta, replace
+(file ./data/hhi_occ_within_edu_nace.dta not found)
+file ./data/hhi_occ_within_edu_nace.dta saved
+
+. restore 
+
+. 
+. exit
+
+end of do-file
+
+. 
+. // create tables and figures
+. do ${src}/tables.do
+
+. /*==============================================================================
+>                            TABLES                                                                                  
+> ==============================================================================*/
+. 
+. // threshold
+. local min_nobs = 100  // at least min_nobs workers in a given cell
+
+. 
+. // concentration of education within occupation
+. // note: we create a table for each occupation with 
+. // - modal education, and its share
+. // - average number of workers in a month occupation / education (mode) cell   
+. // - Herfindahl index, averaged across periods 
+. use ${data}/hhi_edu_within_occ.dta if freq_occ > `min_nobs', clear // 
+
+. collapse (mean) hhi [fw=freq_occ], by(occ_4)
+
+. merge 1:1 occ_4       using ${data}/mode_edu_within_occ.dta, keep(master match) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                               359  
+    -----------------------------------------
+
+. merge 1:1 occ_4 edu_3 using ${data}/nobs_occ_edu.dta, keep(master match) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                               359  
+    -----------------------------------------
+
+. drop freq              // drop total number of obs in occupation / education (mode) cell   
+
+. order occ_4 occ_4_label licensed edu_3 edu_3_label nobs percent hhi 
+
+. gsort -percent  
+
+. label var occ_4       "Yrke code"
+
+. label var occ_4_label "Yrke"
+
+. label var licensed    "Lisensiert"
+
+. label var edu_3       "Mode utdanning code"
+
+. label var edu_3_label "Mode utdanning"
+
+. label var nobs        "Antall, gjennomsnitt"
+
+. label var percent     "Prosentandel"
+
+. label var hhi         "HHI"
+
+. export excel using ${tables}/concentration.xls, sheet("edu_within_occ", replace) first(varlabels)
+file ./out/tables/concentration.xls saved
+
+. 
+. // concentration of education within occupation, by industries
+. // note: we create a table for each occupation within an industry 
+. // - modal education, and its share
+. // - average number of workers in a month occupation / industry / education (mode) cell   
+. // - Herfindahl index, averaged across periods 
+. use ${data}/hhi_edu_within_occ_nace.dta if freq_occ_nace > `min_nobs', clear
+
+. collapse (mean) hhi [fw=freq_occ_nace], by(occ_4 nace_1)
+
+. merge 1:1 occ_4 nace_1       using ${data}/mode_edu_within_occ_nace.dta, keep(master match) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                             1,346  
+    -----------------------------------------
+
+. merge 1:1 occ_4 edu_3 nace_1 using ${data}/nobs_occ_edu_nace.dta, keep(master match) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                             1,346  
+    -----------------------------------------
+
+. drop if nobs < 5      // minimum threshold, mode is based on at least 5 obs per month on average
+(2 observations deleted)
+
+. drop freq             // drop total number of obs in occupation / industry / education (mode) cell   
+
+. order occ_4 occ_4_label licensed edu_3 edu_3_label nobs percent hhi nace_1 nace_1_label 
+
+. gsort nace_1 -percent  
+
+. label var occ_4        "Yrke code"
+
+. label var occ_4_label  "Yrke"
+
+. label var licensed     "Lisensiert"
+
+. label var edu_3        "Mode utdanning code"
+
+. label var edu_3_label  "Mode utdanning"
+
+. label var nobs         "Antall, gjennomsnitt"
+
+. label var percent      "Prosentandel"
+
+. label var hhi          "HHI"
+
+. label var nace_1       "Industri code"
+
+. label var nace_1_label "Industri"
+
+. 
+. levelsof nace_1, local(nace_codes) 
+`"C"' `"F"' `"G"' `"H"' `"I"' `"J"' `"M"' `"N"' `"O"' `"P"' `"Q"' `"Z"'
+
+. foreach i of local nace_codes {
+  2.         export excel using ${tables}/concentration.xls if nace_1 == "`i'", sheet("edu_within_occ_nace_`i'", replace) first(varlabels) 
+  3. }
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+
+.                 
+. // concentration of occupation within education
+. // note: we create a table for each education
+. // - modal occupation, and its share
+. // - average number of workers in a month education / occupation (mode) cell   
+. // - Herfindahl index, averaged across periods 
+. use ${data}/hhi_occ_within_edu.dta if freq_edu > `min_nobs', clear
+
+. collapse (mean) hhi [fw=freq_edu], by(edu_3)
+
+. merge 1:1 edu_3 using ${data}/mode_occ_within_edu.dta, keep(master match) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                98  
+    -----------------------------------------
+
+. merge 1:1 occ_4 edu_3 using ${data}/nobs_occ_edu.dta, keep(master match) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                                98  
+    -----------------------------------------
+
+. drop if nobs < 5      // minimum threshold, mode is based on at least 5 obs per month on average
+(0 observations deleted)
+
+. drop freq             // drop total number of obs in occupation / education (mode) cell   
+
+. order edu_3 edu_3_label occ_4 occ_4_label licensed nobs percent hhi 
+
+. gsort -percent  
+
+. label var edu_3       "Utdanning code"
+
+. label var edu_3_label "Utdanning"
+
+. label var occ_4       "Yrke code (mode)"
+
+. label var occ_4_label "Yrke (mode)"
+
+. label var nobs        "Antall, gjennomsnitt"
+
+. label var percent     "Prosentandel"
+
+. label var hhi         "HHI"
+
+. export excel using ${tables}/concentration.xls, sheet("occ_within_edu", replace) first(varlabels)
+file ./out/tables/concentration.xls saved
+
+. 
+. // concentration of occupation within education, by industries
+. // note: we create a table for each education within an industry
+. // - modal occupation, and its share
+. // - average number of workers in a month education / industry / occupation (mode) cell   
+. // - Herfindahl index, averaged across periods 
+. use ${data}/hhi_occ_within_edu_nace.dta if freq_edu_nace > `min_nobs', clear
+
+. collapse (mean) hhi [fw=freq_edu_nace], by(edu_3 nace_1)
+
+. merge 1:1 edu_3 nace_1 using ${data}/mode_occ_within_edu_nace.dta, keep(master match) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                               869  
+    -----------------------------------------
+
+. merge 1:1 occ_4 edu_3 nace_1 using ${data}/nobs_occ_edu_nace.dta, keep(master match) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                               869  
+    -----------------------------------------
+
+. drop if nobs < 5      // minimum threshold, mode is based on at least 5 obs per month on average
+(1 observation deleted)
+
+. drop freq             // drop total number of obs in education / industry / occupation (mode) cell   
+
+. order edu_3 edu_3_label occ_4 occ_4_label licensed nobs percent hhi nace_1 nace_1_label
+
+. gsort -percent  
+
+. label var edu_3        "Utdanning code"
+
+. label var edu_3_label  "Utdanning"
+
+. label var occ_4        "Yrke code (mode)"
+
+. label var occ_4_label  "Yrke (mode)"
+
+. label var nobs         "Antall, gjennomsnitt"
+
+. label var percent      "Prosentandel"
+
+. label var hhi          "HHI"
+
+. label var nace_1       "Industri code"
+
+. label var nace_1_label "Industri"
+
+. 
+. levelsof nace_1, local(nace_codes) 
+`"C"' `"F"' `"G"' `"H"' `"I"' `"J"' `"M"' `"N"' `"O"' `"P"' `"Q"' `"Z"'
+
+. foreach i of local nace_codes {
+  2.         export excel using ${tables}/concentration.xls if nace_1 == "`i'", sheet("occ_within_edu_nace_`i'", replace) first(varlabels) 
+  3. }
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+file ./out/tables/concentration.xls saved
+
+. 
+. 
+. 
+end of do-file
+
+. do ${src}/figures.do
+
+. /*==============================================================================
+>                                  FIGURES                                                                                   
+> ==============================================================================*/
+. 
+. // threshold
+. local min_nobs = 100  // at least min_nobs workers in a given cell
+
+. 
+. // percentage of workers in education-concentrated occupations over time
+. use ${data}/hhi_edu_within_occ.dta if freq_occ > `min_nobs', clear // 
+
+. collapse (mean) concentrated [fw=freq_occ], by(date)
+
+. gen percent = 100 * concentrated
+
+. sort date
+
+. twoway line percent date, ///
+>         graphregion(color(white)) ///
+>         xlabel(660(12)745, format(%tmCY) grid) ///
+>         ylabel(0(10)50, format(%9.1f) grid) ///
+>         xtitle("Year") ///
+>         ytitle("Percent") ///
+>         title("{fontface Roboto Condensed Bold: Education-concentrated occupations}")
+
+. gr export ${figures}/concentration_edu_within_occ.pdf, replace 
+file ./out/figures/concentration_edu_within_occ.pdf saved as PDF format
+
+. 
+. // percentage of workers in occupation-concentrated educations over time
+. use ${data}/hhi_occ_within_edu.dta if freq_edu > `min_nobs', clear
+
+. collapse (mean) concentrated [fw=freq_edu], by(date)
+
+. gen percent = 100 * concentrated
+
+. sort date
+
+. twoway line percent date, ///
+>         graphregion(color(white)) ///
+>         xlabel(660(12)745, format(%tmCY) grid) ///
+>         ylabel(0(10)50, format(%9.1f) grid) ///
+>         xtitle("Year") ///
+>         ytitle("Percent") ///
+>         title("{fontface Roboto Condensed Bold: Occupation-concentrated education}")
+
+. gr export ${figures}/concentration_occ_within_edu.pdf, replace 
+file ./out/figures/concentration_occ_within_edu.pdf saved as PDF format
+
+. 
+. **#
+. // concentration of education within occupation --------------------------------
+. // note: we consider the distribution of log(HHI) = 2 * log(100) - log(n), 
+. // where n is the number of (equally sized) education groups.
+. 
+. // pooled across all time periods, unweighted, ecdf
+. use ${data}/hhi_edu_within_occ.dta if freq_occ > `min_nobs', clear
+
+. gen log_hhi = log(hhi)
+
+. cumul log_hhi, gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(29,834 real changes made)
+
+. sort ecdf
+
+. line ecdf log_hhi, ///
+> graphregion(color(white)) ///
+> xlabel(, format(%9.1f) grid) ///
+> ylabel(, format(%9.0f) grid) ///
+> xtitle("log(HHI)") ///
+> ytitle("% of occupations") 
+
+. gr export ${figures}/cdf_edu_within_occ.png, replace
+(file ./out/figures/cdf_edu_within_occ.png not found)
+file ./out/figures/cdf_edu_within_occ.png saved as PNG format
+
+. 
+. // pooled across all time periods, weighted by employment, ecdf
+. use ${data}/hhi_edu_within_occ.dta if freq_occ > `min_nobs', clear
+
+. gen log_hhi = log(hhi)
+
+. cumul log_hhi [fw=freq_occ], gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(29,834 real changes made)
+
+. sort ecdf
+
+. line ecdf log_hhi, ///
+> graphregion(color(white)) ///
+> xlabel(, format(%9.1f) grid) ///
+> ylabel(, format(%9.0f) grid) ///
+> xtitle("log(HHI)") ///
+> ytitle("% of occupations") 
+
+. gr export ${figures}/cdf_fw_edu_within_occ.png, replace
+(file ./out/figures/cdf_fw_edu_within_occ.png not found)
+file ./out/figures/cdf_fw_edu_within_occ.png saved as PNG format
+
+. 
+. // 2015(q2-q4) vs 2019(q1-q4), unweighted, ecdf
+. use ${data}/hhi_edu_within_occ.dta if freq_occ > `min_nobs', clear
+
+. keep if (date >= ym(2015,4) & date <= ym(2015,12)) | (date >= ym(2019,1) & date <= ym(2019,12))
+(22,560 observations deleted)
+
+. gen year = year(dofm(date))
+
+. gen log_hhi = log(hhi)
+
+. bys year: cumul log_hhi, gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(7,274 real changes made)
+
+. sort year ecdf 
+
+. twoway (line ecdf log_hhi if year == 2015, lpattern(solid)) (line ecdf log_hhi if year == 2019,  lpattern(dash)), ///
+>         graphregion(color(white)) ///
+>         xlabel(, format(%9.1f) grid) ///
+>         ylabel(, format(%9.0f) grid) ///
+>         xtitle("log(HHI)") ///
+>         ytitle("% of occupations") ///
+>         legend(order(1 "2015" 2 "2019"))
+
+. gr export ${figures}/cdf_2015_vs_2019_edu_within_occ.png, replace
+(file ./out/figures/cdf_2015_vs_2019_edu_within_occ.png not found)
+file ./out/figures/cdf_2015_vs_2019_edu_within_occ.png saved as PNG format
+
+. 
+. // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, ecdf
+. use ${data}/hhi_edu_within_occ.dta if freq_occ > `min_nobs', clear
+
+. keep if (date >= ym(2015,4) & date <= ym(2015,12)) | (date >= ym(2019,1) & date <= ym(2019,12))
+(22,560 observations deleted)
+
+. gen year = year(dofm(date))
+
+. gen log_hhi = log(hhi)
+
+. bys year: cumul log_hhi [fw=freq_occ], gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(7,274 real changes made)
+
+. sort year ecdf 
+
+. twoway (line ecdf log_hhi if year == 2015, lpattern(solid)) (line ecdf log_hhi if year == 2019,  lpattern(dash)), ///
+>         graphregion(color(white)) ///
+>         xlabel(, format(%9.1f) grid) ///
+>         ylabel(, format(%9.0f) grid) ///
+>         xtitle("log(HHI)") ///
+>         ytitle("% of occupations") ///
+>         legend(order(1 "2015" 2 "2019"))
+
+. gr export ${figures}/cdf_fw_2015_vs_2019_edu_within_occ.png, replace
+(file ./out/figures/cdf_fw_2015_vs_2019_edu_within_occ.png not found)
+file ./out/figures/cdf_fw_2015_vs_2019_edu_within_occ.png saved as PNG format
+
+. 
+. // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, ecdf, by industry
+. use ${data}/hhi_edu_within_occ_nace.dta if freq_occ_nace > `min_nobs', clear
+
+. keep if (date >= ym(2015,4) & date <= ym(2015,12)) | (date >= ym(2019,1) & date <= ym(2019,12))
+(75,368 observations deleted)
+
+. gen year = year(dofm(date))
+
+. gen log_hhi = log(hhi)
+
+. bys year nace_1: cumul log_hhi [fw=freq_occ_nace], gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(24,344 real changes made)
+
+. sort year ecdf 
+
+. twoway (line ecdf log_hhi if year == 2015, lpattern(solid)) (line ecdf log_hhi if year == 2019,  lpattern(dash)), ///
+>         by(nace_1_label, iscale(*0.8) note("")) ///
+>         graphregion(color(white)) ///
+>         xlabel(, format(%9.1f) grid) ///
+>         ylabel(, format(%9.0f) grid) ///
+>         xtitle("log(HHI)") ///
+>         ytitle("% of occupations") ///
+>         legend(order(1 "2015" 2 "2019")) 
+
+. gr export ${figures}/cdf_fw_2015_vs_2019_edu_within_occ_nace.png, replace
+(file ./out/figures/cdf_fw_2015_vs_2019_edu_within_occ_nace.png not found)
+file ./out/figures/cdf_fw_2015_vs_2019_edu_within_occ_nace.png saved as PNG format
+
+. 
+. // 2015(q2-q4) vs 2019(q1-q4), relative changes in equivalized education groups
+. // recall that log(HHI) = 2 * log(100) - log(n), where n is the number of 
+. // (equally sized) education groups. Therefore, 
+. // log(HHI_2019) - log(HHI_2015) = - (log(n_2019) - log(n_2015)),
+. // which corresponds to the relative change in the equivalized education groups with the sign reversed.
+. use ${data}/hhi_edu_within_occ.dta if freq_occ > `min_nobs', clear
+
+. keep if (date >= ym(2015,4) & date <= ym(2015,12)) | (date >= ym(2019,1) & date <= ym(2019,12))
+(22,560 observations deleted)
+
+. replace occ_4_label = occ_4_label + " (" + occ_4 + ")"
+variable occ_4_label was str68 now str70
+(7,274 real changes made)
+
+. gen year = year(dofm(date))
+
+. 
+. collapse (mean) hhi (last) occ_4_label [fw=freq_occ], by(occ_4 year)
+
+. egen id = group(occ_4)
+
+. xtset id year, delta(4)
+
+Panel variable: id (unbalanced)
+ Time variable: year, 2015 to 2019
+         Delta: 4 units
+
+. gen rel_change = (log(hhi) - log(L1.hhi)) * 100
+(354 missing values generated)
+
+. keep if missing(rel_change) == 0
+(354 observations deleted)
+
+. keep occ_4 occ_4_label rel_change 
+
+. label var rel_change "Change in HHI in %"
+
+. egen ranking = rank(rel_change)
+
+. gsort -ranking 
+
+. gen cat = ""
+(347 missing values generated)
+
+. replace cat = "top 10" if _n <= 10
+variable cat was str1 now str6
+(10 real changes made)
+
+. gsort +ranking 
+
+. replace cat = "bottom 10" if _n <= 10
+variable cat was str6 now str9
+(10 real changes made)
+
+. 
+. graph hbar (asis) rel_change if missing(cat) == 0, ///
+>         over(cat) asyvars over(occ_4_label, sort(rel_change) descending) ///
+>         graphregion(color(white)) ///
+>         ytitle("Change in %") ///
+>         legend(off) 
+
+. gr export ${figures}/change_2015_vs_2019_edu_within_occ.png, replace
+(file ./out/figures/change_2015_vs_2019_edu_within_occ.png not found)
+file ./out/figures/change_2015_vs_2019_edu_within_occ.png saved as PNG format
+
+. 
+. **#
+. // concentration of occupation within education --------------------------------
+. // Distribution of log(HHI) = 2 * log(100) - log(n), where n is the number of 
+. // (equally sized) occupation groups.
+. 
+. // pooled across all time periods, unweighted, ecdf
+. use ${data}/hhi_occ_within_edu.dta if freq_edu > `min_nobs', clear
+
+. gen log_hhi = log(hhi)
+
+. cumul log_hhi, gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(8,402 real changes made)
+
+. sort ecdf
+
+. line ecdf log_hhi, ///
+> graphregion(color(white)) ///
+> xlabel(, format(%9.1f) grid) ///
+> ylabel(, format(%9.0f) grid) ///
+> xtitle("log(HHI)") ///
+> ytitle("% of education") 
+
+. gr export ${figures}/cdf_occ_within_edu.png, replace
+(file ./out/figures/cdf_occ_within_edu.png not found)
+file ./out/figures/cdf_occ_within_edu.png saved as PNG format
+
+. 
+. // pooled across all time periods, weighted by employment, ecdf
+. use ${data}/hhi_occ_within_edu.dta if freq_edu > `min_nobs', clear
+
+. gen log_hhi = log(hhi)
+
+. cumul log_hhi [fw=freq_edu], gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(8,402 real changes made)
+
+. sort ecdf
+
+. line ecdf log_hhi, ///
+> graphregion(color(white)) ///
+> xlabel(, format(%9.1f) grid) ///
+> ylabel(, format(%9.0f) grid) ///
+> xtitle("log(HHI)") ///
+> ytitle("% of education") 
+
+. gr export ${figures}/cdf_fw_occ_within_edu.png, replace
+(file ./out/figures/cdf_fw_occ_within_edu.png not found)
+file ./out/figures/cdf_fw_occ_within_edu.png saved as PNG format
+
+. 
+. // 2015(q2-q4) vs 2019(q1-q4), unweighted, ecdf
+. use ${data}/hhi_occ_within_edu.dta if freq_edu > `min_nobs', clear
+
+. keep if (date >= ym(2015,4) & date <= ym(2015,12)) | (date >= ym(2019,1) & date <= ym(2019,12))
+(6,344 observations deleted)
+
+. gen year = year(dofm(date))
+
+. gen log_hhi = log(hhi)
+
+. bys year: cumul log_hhi, gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(2,058 real changes made)
+
+. sort year ecdf 
+
+. twoway (line ecdf log_hhi if year == 2015, lpattern(solid)) (line ecdf log_hhi if year == 2019,  lpattern(dash)), ///
+> graphregion(color(white)) ///
+> xlabel(, format(%9.1f) grid) ///
+> ylabel(, format(%9.0f) grid) ///
+> xtitle("log(HHI)") ///
+> ytitle("% of education") ///
+> legend(order(1 "2015" 2 "2019"))
+
+. gr export ${figures}/cdf_2015_vs_2019_occ_within_edu.png, replace
+(file ./out/figures/cdf_2015_vs_2019_occ_within_edu.png not found)
+file ./out/figures/cdf_2015_vs_2019_occ_within_edu.png saved as PNG format
+
+. 
+. // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, ecdf
+. use ${data}/hhi_occ_within_edu.dta if freq_edu > `min_nobs', clear
+
+. keep if (date >= ym(2015,4) & date <= ym(2015,12)) | (date >= ym(2019,1) & date <= ym(2019,12))
+(6,344 observations deleted)
+
+. gen year = year(dofm(date))
+
+. gen log_hhi = log(hhi)
+
+. bys year: cumul log_hhi [fw=freq_edu], gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(2,058 real changes made)
+
+. sort year ecdf 
+
+. twoway (line ecdf log_hhi if year == 2015, lpattern(solid)) (line ecdf log_hhi if year == 2019,  lpattern(dash)), ///
+> graphregion(color(white))  ///
+> xlabel(, format(%9.1f) grid) ///
+> ylabel(, format(%9.0f) grid) ///
+> xtitle("log(HHI)") ///
+> ytitle("% of education") ///
+> legend(order(1 "2015" 2 "2019"))
+
+. gr export ${figures}/cdf_fw_2015_vs_2019_occ_within_edu.png, replace
+(file ./out/figures/cdf_fw_2015_vs_2019_occ_within_edu.png not found)
+file ./out/figures/cdf_fw_2015_vs_2019_occ_within_edu.png saved as PNG format
+
+. 
+. // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, ecdf, by industry
+. use ${data}/hhi_occ_within_edu_nace.dta if freq_edu_nace > `min_nobs', clear
+
+. keep if (date >= ym(2015,4) & date <= ym(2015,12)) | (date >= ym(2019,1) & date <= ym(2019,12))
+(53,607 observations deleted)
+
+. gen year = year(dofm(date))
+
+. gen log_hhi = log(hhi)
+
+. bys year nace_1: cumul log_hhi [fw=freq_edu_nace], gen(ecdf)
+
+. replace ecdf = ecdf * 100
+(17,243 real changes made)
+
+. sort year ecdf 
+
+. twoway (line ecdf log_hhi if year == 2015, lpattern(solid)) (line ecdf log_hhi if year == 2019,  lpattern(dash)), ///
+>         by(nace_1_label, iscale(*0.8) note("")) ///
+>         graphregion(color(white)) ///
+>         xlabel(, format(%9.1f) grid) ///
+>         ylabel(, format(%9.0f) grid) ///
+>         xtitle("log(HHI)") ///
+>         ytitle("% of education") ///
+>         legend(order(1 "2015" 2 "2019")) 
+
+. gr export ${figures}/cdf_fw_2015_vs_2019_occ_within_edu_nace.png, replace
+(file ./out/figures/cdf_fw_2015_vs_2019_occ_within_edu_nace.png not found)
+file ./out/figures/cdf_fw_2015_vs_2019_occ_within_edu_nace.png saved as PNG format
+
+. 
+. // 2015(q2-q4) vs 2019(q1-q4): relative changes in equivalized occupation groups
+. use ${data}/hhi_occ_within_edu.dta if freq_edu > `min_nobs', clear
+
+. keep if (date >= ym(2015,4) & date <= ym(2015,12)) | (date >= ym(2019,1) & date <= ym(2019,12))
+(6,344 observations deleted)
+
+. replace edu_3_label = edu_3_label + " (" + edu_3 + ")"
+variable edu_3_label was str61 now str67
+(2,058 real changes made)
+
+. gen year = year(dofm(date))
+
+. collapse (mean) hhi (mean) freq_edu (last) edu_3_label, by(edu_3 year)
+
+. egen id = group(edu_3)
+
+. xtset id year, delta(4)
+
+Panel variable: id (strongly balanced)
+ Time variable: year, 2015 to 2019
+         Delta: 4 units
+
+. gen rel_change = (log(hhi) - log(L1.hhi)) * 100
+(98 missing values generated)
+
+. keep if missing(rel_change) == 0
+(98 observations deleted)
+
+. keep edu_3 edu_3_label rel_change 
+
+. label var rel_change "Change in HHI in %"
+
+. egen ranking = rank(rel_change)
+
+. gsort -ranking 
+
+. gen cat = ""
+(98 missing values generated)
+
+. replace cat = "top 10" if _n <= 10
+variable cat was str1 now str6
+(10 real changes made)
+
+. gsort +ranking 
+
+. replace cat = "bottom 10" if _n <= 10
+variable cat was str6 now str9
+(10 real changes made)
+
+. 
+. graph hbar (asis) rel_change if missing(cat) == 0, ///
+>         over(cat) asyvars over(edu_3_label, sort(rel_change) descending) ///
+>         graphregion(color(white)) ///
+>         ytitle("Change in %") ///
+>         legend(off) 
+
+. gr export ${figures}/change_2015_vs_2019_occ_within_edu.png, replace
+(file ./out/figures/change_2015_vs_2019_occ_within_edu.png not found)
+file ./out/figures/change_2015_vs_2019_occ_within_edu.png saved as PNG format
+
+. 
+end of do-file
+
+. 
+. di "$S_TIME $S_DATE"
+19:49:18 10 Nov 2022
+
+. log close
+      name:  <unnamed>
+       log:  /ssb/stamme01/admod/users/mga/admod-edu-occ/main.log
+  log type:  text
+ closed on:  10 Nov 2022, 19:49:18
+----------------------------------------------------------------------------------------------------------------------------------------------
