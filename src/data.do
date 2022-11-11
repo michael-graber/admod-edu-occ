@@ -3,7 +3,7 @@
 ==============================================================================*/
 
 // Worker-month level observations --------------------------------------------- 
-local nobs_pop    = 0    // counter for number of obs in population
+local nobs_pop    = 0    // counter for number of obs in population (= wage earners in their main job)
 local nobs_sample = 0    // counter for number of obs in sample 
 
 forvalues t = 2015 / 2022 {
@@ -11,11 +11,11 @@ forvalues t = 2015 / 2022 {
 		
 		noi di "Year = " `t' ", Month = " `m' 
 		
-		// full population 
+		// population: wage earners in their main job 
 		cap use fnr arb_arbmark_status arb_hovedarbeid if /// 
 			!missing(fnr) &                /// non-missing identifier
-			(arb_arbmark_status == "1" | arb_arbmark_status == "2") & /// wage earner & self-employed
-			arb_hovedarbeid == "1" ///
+			arb_arbmark_status == "1" &    /// wage earner 
+			arb_hovedarbeid == "1"         /// main employment
 			using ${raw}/s312/aordning/ameld_statdata_`t'_m`m', clear
 		if _rc continue	
 		noi count
@@ -82,7 +82,6 @@ forvalues t = 2015 / 2022 {
 		! rm ${data}/workers_`t'_m`m'.dta
 	}
 }
-
 local sample_coverage = round(`nobs_sample' / `nobs_pop' * 100, .01) 
 di "Selected sample covers " `sample_coverage' "% of the population"  
 scalar sample_coverage = `sample_coverage'
@@ -111,7 +110,6 @@ preserve
 	label var mi_nace "Industry"
 	sort date
 	export excel using ${tables}/summary.xls, sheet("missings", replace) firstrow(varl) datestring("%tm")
-
 	twoway (line mi_edu  date, lpattern(solid)) ///
 	(line mi_occ  date, lpattern(dash)) ///
 	(line mi_nace date, lpattern(dot)), ///
@@ -121,7 +119,7 @@ preserve
 	xtitle("Year") ///
 	ytitle("Share of missing observations") ///
 	title("{fontface Roboto Condensed Bold: Missings}")
-	graph export ${figures}/missings.pdf, replace
+	graph export ${figures}/missings.png, replace
 restore	
 local N0 = _N
 drop if missing(pers_bu_nus2000) | missing(arb_yrke_styrk08) | missing(virk_nace1_sn07)
@@ -169,7 +167,6 @@ foreach l of numlist 1 4 {
 	}	
 	save ${data}/occ_`l'_digits, replace
 }
-
 
 // education codes: 1 and 3 digit level
 foreach l of numlist 1 3 {
