@@ -22,6 +22,10 @@ preserve
 	export excel using ${tables}/summary.xls, sheet("kjonn", replace)
 restore 
 preserve
+	contract pers_invkat, freq(freq) percent(perc)
+	export excel using ${tables}/summary.xls, sheet("immigrants", replace)
+restore 
+preserve
 	contract edu_1, freq(freq) percent(perc)
 	merge 1:1 edu_1 using ${data}/edu_1_digits, keep(master match) keepusing(edu_1_label) nogen noreport
 	order edu_1 edu_1_label

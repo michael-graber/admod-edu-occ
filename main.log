@@ -2,10 +2,10 @@
       name:  <unnamed>
        log:  /ssb/stamme01/admod/users/mga/admod-edu-occ/main.log
   log type:  text
- opened on:  11 Nov 2022, 15:57:03
+ opened on:  13 Jan 2023, 14:11:59
 
 . di "$S_TIME $S_DATE"
-15:57:03 11 Nov 2022
+14:11:59 13 Jan 2023
 
 . /*==============================================================================
 >                             MAIN FILE
@@ -1399,7 +1399,6 @@ Year = 2022, Month = 12
 
 . save ${data}/workers.dta, emptyok replace
 (dataset contains 0 observations)
-(file ./data/workers.dta not found)
 file ./data/workers.dta saved
 
 . forvalues t = 2015 / 2022 {
@@ -1527,8 +1526,8 @@ Duplicates in terms of all variables
 .         tempfile edu_update
 
 .         save `edu_update', replace 
-(file /tmp/St135838.000002 not found)
-file /tmp/St135838.000002 saved as .dta format
+(file /tmp/St109030.000002 not found)
+file /tmp/St109030.000002 saved as .dta format
 
 . restore
 
@@ -1624,8 +1623,8 @@ file ./data/workers.dta saved
 . tempfile lic_database
 
 . save `lic_database', replace 
-(file /tmp/St135838.000004 not found)
-file /tmp/St135838.000004 saved as .dta format
+(file /tmp/St109030.000004 not found)
+file /tmp/St109030.000004 saved as .dta format
 
 . use ${data}/codes_styrk98_08.dta, clear
 
@@ -1657,7 +1656,7 @@ Duplicates in terms of styrk08
 . rename styrk08 occ_4
 
 . save `lic_database', replace    
-file /tmp/St135838.000004 saved as .dta format
+file /tmp/St109030.000004 saved as .dta format
 
 . 
 . // occupation codes: 1 and 4 digit level  
@@ -1674,7 +1673,6 @@ file /tmp/St135838.000004 saved as .dta format
  11.         save ${data}/occ_`l'_digits, replace
  12. }
 (572 observations deleted)
-(file ./data/occ_1_digits.dta not found)
 file ./data/occ_1_digits.dta saved
 (175 observations deleted)
 
@@ -1687,7 +1685,6 @@ file ./data/occ_1_digits.dta saved
     Matched                               403  
     -----------------------------------------
 (4 real changes made)
-(file ./data/occ_4_digits.dta not found)
 file ./data/occ_4_digits.dta saved
 
 . 
@@ -1701,10 +1698,8 @@ file ./data/occ_4_digits.dta saved
   7.         save ${data}/edu_`l'_digits, replace
   8. }
 (4,593 observations deleted)
-(file ./data/edu_1_digits.dta not found)
 file ./data/edu_1_digits.dta saved
 (4,253 observations deleted)
-(file ./data/edu_3_digits.dta not found)
 file ./data/edu_3_digits.dta saved
 
 . 
@@ -1719,7 +1714,6 @@ file ./data/edu_3_digits.dta saved
 . rename shortname nace_1_label
 
 . save ${data}/nace_1_digits, replace
-(file ./data/nace_1_digits.dta not found)
 file ./data/nace_1_digits.dta saved
 
 . use ${data}/codes_sn2007.dta, clear
@@ -1816,6 +1810,15 @@ file ./out/tables/summary.xls saved
 
 . preserve
 
+.         contract pers_invkat, freq(freq) percent(perc)
+
+.         export excel using ${tables}/summary.xls, sheet("immigrants", replace)
+file ./out/tables/summary.xls saved
+
+. restore 
+
+. preserve
+
 .         contract edu_1, freq(freq) percent(perc)
 
 .         merge 1:1 edu_1 using ${data}/edu_1_digits, keep(master match) keepusing(edu_1_label) nogen noreport
@@ -1898,7 +1901,6 @@ end of do-file
 (72,300 observations deleted)
 
 .         save ${data}/nobs_occ_4_edu_3.dta, replace
-(file ./data/nobs_occ_4_edu_3.dta not found)
 file ./data/nobs_occ_4_edu_3.dta saved
 
 . restore
@@ -1926,7 +1928,6 @@ file ./data/nobs_occ_4_edu_3.dta saved
 (19,459 observations deleted)
 
 .         save ${data}/nobs_occ_4_edu_3alt.dta, replace
-(file ./data/nobs_occ_4_edu_3alt.dta not found)
 file ./data/nobs_occ_4_edu_3alt.dta saved
 
 . restore
@@ -1948,7 +1949,6 @@ file ./data/nobs_occ_4_edu_3alt.dta saved
 (1,347,691 observations deleted)
 
 .         save ${data}/nobs_occ_4_edu_3_nace_1.dta, replace
-(file ./data/nobs_occ_4_edu_3_nace_1.dta not found)
 file ./data/nobs_occ_4_edu_3_nace_1.dta saved
 
 . restore
@@ -2032,7 +2032,6 @@ Duplicates in terms of occ_4
 .         gsort -percent
 
 .         save ${data}/mode_edu_3_within_occ_4.dta, replace
-(file ./data/mode_edu_3_within_occ_4.dta not found)
 file ./data/mode_edu_3_within_occ_4.dta saved
 
 . restore
@@ -2089,7 +2088,6 @@ Duplicates in terms of occ_4
 .         gsort -percent
 
 .         save ${data}/mode_edu_3alt_within_occ_4.dta, replace
-(file ./data/mode_edu_3alt_within_occ_4.dta not found)
 file ./data/mode_edu_3alt_within_occ_4.dta saved
 
 . restore
@@ -2148,7 +2146,6 @@ Duplicates in terms of occ_4 nace_1
 .         gsort -percent
 
 .         save ${data}/mode_edu_3_within_occ_4_nace_1.dta, replace
-(file ./data/mode_edu_3_within_occ_4_nace_1.dta not found)
 file ./data/mode_edu_3_within_occ_4_nace_1.dta saved
 
 . restore
@@ -2199,7 +2196,6 @@ Duplicates in terms of edu_3
 .         gsort -percent
 
 .         save ${data}/mode_occ_4_within_edu_3.dta, replace
-(file ./data/mode_occ_4_within_edu_3.dta not found)
 file ./data/mode_occ_4_within_edu_3.dta saved
 
 . restore
@@ -2256,7 +2252,6 @@ Duplicates in terms of edu_3
 .         gsort -percent
 
 .         save ${data}/mode_occ_4_within_edu_3alt.dta, replace
-(file ./data/mode_occ_4_within_edu_3alt.dta not found)
 file ./data/mode_occ_4_within_edu_3alt.dta saved
 
 . restore
@@ -2315,7 +2310,6 @@ Duplicates in terms of edu_3 nace_1
 .         gsort -percent
 
 .         save ${data}/mode_occ_4_within_edu_3_nace_1.dta, replace
-(file ./data/mode_occ_4_within_edu_3_nace_1.dta not found)
 file ./data/mode_occ_4_within_edu_3_nace_1.dta saved
 
 . restore
@@ -2380,7 +2374,6 @@ end of do-file
 .         sort occ_4 date
 
 .         save ${data}/hhi_edu_3_within_occ_4.dta, replace
-(file ./data/hhi_edu_3_within_occ_4.dta not found)
 file ./data/hhi_edu_3_within_occ_4.dta saved
 
 . restore 
@@ -2418,7 +2411,6 @@ file ./data/hhi_edu_3_within_occ_4.dta saved
 .         sort occ_4 date
 
 .         save ${data}/hhi_edu_3alt_within_occ_4.dta, replace
-(file ./data/hhi_edu_3alt_within_occ_4.dta not found)
 file ./data/hhi_edu_3alt_within_occ_4.dta saved
 
 . restore 
@@ -2458,7 +2450,6 @@ file ./data/hhi_edu_3alt_within_occ_4.dta saved
 .         sort occ_4 nace_1 date
 
 .         save ${data}/hhi_edu_3_within_occ_4_nace_1.dta, replace
-(file ./data/hhi_edu_3_within_occ_4_nace_1.dta not found)
 file ./data/hhi_edu_3_within_occ_4_nace_1.dta saved
 
 . restore 
@@ -2490,7 +2481,6 @@ file ./data/hhi_edu_3_within_occ_4_nace_1.dta saved
 .         sort edu_3 date
 
 .         save ${data}/hhi_occ_4_within_edu_3.dta, replace
-(file ./data/hhi_occ_4_within_edu_3.dta not found)
 file ./data/hhi_occ_4_within_edu_3.dta saved
 
 . restore 
@@ -2528,7 +2518,6 @@ file ./data/hhi_occ_4_within_edu_3.dta saved
 .         sort edu_3 date
 
 .         save ${data}/hhi_occ_4_within_edu_3alt.dta, replace
-(file ./data/hhi_occ_4_within_edu_3alt.dta not found)
 file ./data/hhi_occ_4_within_edu_3alt.dta saved
 
 . restore 
@@ -2568,7 +2557,6 @@ file ./data/hhi_occ_4_within_edu_3alt.dta saved
 .         sort edu_3 nace_1 date
 
 .         save ${data}/hhi_occ_4_within_edu_3_nace_1.dta, replace
-(file ./data/hhi_occ_4_within_edu_3_nace_1.dta not found)
 file ./data/hhi_occ_4_within_edu_3_nace_1.dta saved
 
 . restore 
@@ -2617,7 +2605,7 @@ end of do-file
 
 . drop freq              // drop total number of obs in occupation / education (mode) cell   
 
-. order occ_4 occ_4_label licensed edu_3 edu_3_label nobs percent hhi 
+. order occ_4 occ_4_label edu_3 edu_3_label nobs percent hhi licensed 
 
 . gsort -percent  
 
@@ -2664,7 +2652,7 @@ file ./out/tables/concentration.xls saved
 
 . drop freq              // drop total number of obs in occupation / education (mode) cell   
 
-. order occ_4 occ_4_label licensed edu_3 edu_3_label nobs percent hhi 
+. order occ_4 occ_4_label edu_3 edu_3_label nobs percent hhi licensed 
 
 . gsort -percent  
 
@@ -2711,7 +2699,7 @@ file ./out/tables/concentration.xls saved
 
 . drop freq             // drop total number of obs in occupation / industry / education (mode) cell   
 
-. order occ_4 occ_4_label licensed edu_3 edu_3_label nobs percent hhi nace_1 nace_1_label 
+. order occ_4 occ_4_label edu_3 edu_3_label nobs percent hhi nace_1 nace_1_label licensed
 
 . gsort nace_1 -percent  
 
@@ -2740,8 +2728,8 @@ file ./out/tables/concentration.xls saved
 `"C"' `"F"' `"G"' `"H"' `"I"' `"J"' `"M"' `"N"' `"O"' `"P"' `"Q"' `"Z"'
 
 . foreach i of local nace_codes {
-  2.         export excel using ${tables}/concentration_by_industry.xls if nace_1 == "`i'", sheet("edu_3_within_occ_4_nace_`i'", replace) firs
-> t(varlabels) 
+  2.         export excel using ${tables}/concentration_by_industry.xls if nace_1 == "`i'", sheet("edu_3_within_occ_4_nace_`i'", replace) first(
+> varlabels) 
   3. }
 file ./out/tables/concentration_by_industry.xls saved
 file ./out/tables/concentration_by_industry.xls saved
@@ -2780,7 +2768,7 @@ file ./out/tables/concentration_by_industry.xls saved
 
 . drop freq             // drop total number of obs in occupation / education (mode) cell   
 
-. order edu_3 edu_3_label occ_4 occ_4_label licensed nobs percent hhi 
+. order edu_3 edu_3_label occ_4 occ_4_label nobs percent hhi licensed
 
 . gsort -percent  
 
@@ -2825,7 +2813,7 @@ file ./out/tables/concentration.xls saved
 
 . drop freq             // drop total number of obs in occupation / education (mode) cell   
 
-. order edu_3 edu_3_label occ_4 occ_4_label licensed nobs percent hhi 
+. order edu_3 edu_3_label occ_4 occ_4_label nobs percent hhi licensed
 
 . gsort -percent  
 
@@ -2870,7 +2858,7 @@ file ./out/tables/concentration.xls saved
 
 . drop freq             // drop total number of obs in education / industry / occupation (mode) cell   
 
-. order edu_3 edu_3_label occ_4 occ_4_label licensed nobs percent hhi nace_1 nace_1_label
+. order edu_3 edu_3_label occ_4 occ_4_label nobs percent hhi nace_1 nace_1_label licensed
 
 . gsort -percent  
 
@@ -2897,8 +2885,8 @@ file ./out/tables/concentration.xls saved
 `"C"' `"F"' `"G"' `"H"' `"I"' `"J"' `"M"' `"N"' `"O"' `"P"' `"Q"' `"Z"'
 
 . foreach i of local nace_codes {
-  2.         export excel using ${tables}/concentration_by_industry.xls if nace_1 == "`i'", sheet("occ_4_within_edu_3_nace_1_`i'", replace) fi
-> rst(varlabels) 
+  2.         export excel using ${tables}/concentration_by_industry.xls if nace_1 == "`i'", sheet("occ_4_within_edu_3_nace_1_`i'", replace) firs
+> t(varlabels) 
   3. }
 file ./out/tables/concentration_by_industry.xls saved
 file ./out/tables/concentration_by_industry.xls saved
@@ -2944,9 +2932,9 @@ end of do-file
 >         xtitle("") ///
 >         ytitle("Prosent") 
 
-. gr export ${figures}/share_concentrated_edu_3_within_occ_4.png, replace 
-(file ./out/figures/share_concentrated_edu_3_within_occ_4.png not found)
-file ./out/figures/share_concentrated_edu_3_within_occ_4.png saved as PNG format
+. gr export ${figures}/share_concentrated_edu_3_within_occ_4.svg, replace         
+(file ./out/figures/share_concentrated_edu_3_within_occ_4.svg not found)
+file ./out/figures/share_concentrated_edu_3_within_occ_4.svg saved as SVG format
 
 . 
 . // percentage of workers in education-concentrated occupations over time, alternative education groups
@@ -2965,9 +2953,9 @@ file ./out/figures/share_concentrated_edu_3_within_occ_4.png saved as PNG format
 >         xtitle("") ///
 >         ytitle("Prosent") 
 
-. gr export ${figures}/share_concentrated_edu_3alt_within_occ_4.png, replace 
-(file ./out/figures/share_concentrated_edu_3alt_within_occ_4.png not found)
-file ./out/figures/share_concentrated_edu_3alt_within_occ_4.png saved as PNG format
+. gr export ${figures}/share_concentrated_edu_3alt_within_occ_4.svg, replace 
+(file ./out/figures/share_concentrated_edu_3alt_within_occ_4.svg not found)
+file ./out/figures/share_concentrated_edu_3alt_within_occ_4.svg saved as SVG format
 
 . 
 . // percentage of workers in occupation-concentrated educations over time
@@ -2986,9 +2974,9 @@ file ./out/figures/share_concentrated_edu_3alt_within_occ_4.png saved as PNG for
 >         xtitle("") ///
 >         ytitle("Prosent") 
 
-. gr export ${figures}/share_concentrated_occ_4_within_edu_3.png, replace 
-(file ./out/figures/share_concentrated_occ_4_within_edu_3.png not found)
-file ./out/figures/share_concentrated_occ_4_within_edu_3.png saved as PNG format
+. gr export ${figures}/share_concentrated_occ_4_within_edu_3.svg, replace 
+(file ./out/figures/share_concentrated_occ_4_within_edu_3.svg not found)
+file ./out/figures/share_concentrated_occ_4_within_edu_3.svg saved as SVG format
 
 . 
 . // percentage of workers in occupation-concentrated educations over time, alternative education groups
@@ -3007,9 +2995,9 @@ file ./out/figures/share_concentrated_occ_4_within_edu_3.png saved as PNG format
 >         xtitle("") ///
 >         ytitle("Prosent") 
 
-. gr export ${figures}/share_concentrated_occ_4_within_edu_3alt.png, replace 
-(file ./out/figures/share_concentrated_occ_4_within_edu_3alt.png not found)
-file ./out/figures/share_concentrated_occ_4_within_edu_3alt.png saved as PNG format
+. gr export ${figures}/share_concentrated_occ_4_within_edu_3alt.svg, replace 
+(file ./out/figures/share_concentrated_occ_4_within_edu_3alt.svg not found)
+file ./out/figures/share_concentrated_occ_4_within_edu_3alt.svg saved as SVG format
 
 . 
 . **#
@@ -3036,9 +3024,9 @@ file ./out/figures/share_concentrated_occ_4_within_edu_3alt.png saved as PNG for
 > xtitle("Tilsvarende antall utdanningsgrupper") ///
 > ytitle("Prosent av yrker") 
 
-. gr export ${figures}/cdf_neq_edu_3_within_occ_4.png, replace
-(file ./out/figures/cdf_neq_edu_3_within_occ_4.png not found)
-file ./out/figures/cdf_neq_edu_3_within_occ_4.png saved as PNG format
+. gr export ${figures}/cdf_neq_edu_3_within_occ_4.svg, replace
+(file ./out/figures/cdf_neq_edu_3_within_occ_4.svg not found)
+file ./out/figures/cdf_neq_edu_3_within_occ_4.svg saved as SVG format
 
 . 
 . // pooled across all time periods, weighted by employment, cdf of equivalized education groups
@@ -3060,9 +3048,9 @@ file ./out/figures/cdf_neq_edu_3_within_occ_4.png saved as PNG format
 > xtitle("Tilsvarende antall utdanningsgrupper") ///
 > ytitle("Prosent av yrker") 
 
-. gr export ${figures}/cdf_fw_neq_edu_3_within_occ_4.png, replace
-(file ./out/figures/cdf_fw_neq_edu_3_within_occ_4.png not found)
-file ./out/figures/cdf_fw_neq_edu_3_within_occ_4.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_edu_3_within_occ_4.svg, replace
+(file ./out/figures/cdf_fw_neq_edu_3_within_occ_4.svg not found)
+file ./out/figures/cdf_fw_neq_edu_3_within_occ_4.svg saved as SVG format
 
 . 
 . // pooled across all time periods, weighted by employment, cdf of equivalized education groups, alternative education groups
@@ -3084,9 +3072,9 @@ file ./out/figures/cdf_fw_neq_edu_3_within_occ_4.png saved as PNG format
 > xtitle("Tilsvarende antall utdanningsgrupper") ///
 > ytitle("Prosent av yrker") 
 
-. gr export ${figures}/cdf_fw_neq_edu_3alt_within_occ_4.png, replace
-(file ./out/figures/cdf_fw_neq_edu_3alt_within_occ_4.png not found)
-file ./out/figures/cdf_fw_neq_edu_3alt_within_occ_4.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_edu_3alt_within_occ_4.svg, replace
+(file ./out/figures/cdf_fw_neq_edu_3alt_within_occ_4.svg not found)
+file ./out/figures/cdf_fw_neq_edu_3alt_within_occ_4.svg saved as SVG format
 
 . 
 . // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, cdf of equivalized education groups
@@ -3114,9 +3102,9 @@ file ./out/figures/cdf_fw_neq_edu_3alt_within_occ_4.png saved as PNG format
 >         ytitle("Prosent av yrker") ///
 >         legend(order(1 "2015" 2 "2019"))
 
-. gr export ${figures}/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4.png, replace
-(file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4.png not found)
-file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4.svg, replace
+(file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4.svg not found)
+file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4.svg saved as SVG format
 
 . 
 . // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, cdf of equivalized education groups, alternative education groups
@@ -3144,9 +3132,9 @@ file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4.png saved as PNG f
 >         ytitle("Prosent av yrker") ///
 >         legend(order(1 "2015" 2 "2019"))
 
-. gr export ${figures}/cdf_fw_neq_2015_vs_2019_edu_3alt_within_occ_4.png, replace
-(file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3alt_within_occ_4.png not found)
-file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3alt_within_occ_4.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_2015_vs_2019_edu_3alt_within_occ_4.svg, replace
+(file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3alt_within_occ_4.svg not found)
+file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3alt_within_occ_4.svg saved as SVG format
 
 . 
 . // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, cdf of equivalized education groups, by industry
@@ -3175,9 +3163,9 @@ file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3alt_within_occ_4.png saved as PN
 >         ytitle("Prosent av yrker") ///
 >         legend(order(1 "2015" 2 "2019")) 
 
-. gr export ${figures}/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4_nace_1.png, replace
-(file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4_nace_1.png not found)
-file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4_nace_1.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4_nace_1.svg, replace
+(file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4_nace_1.svg not found)
+file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4_nace_1.svg saved as SVG format
 
 . 
 . **#
@@ -3204,9 +3192,9 @@ file ./out/figures/cdf_fw_neq_2015_vs_2019_edu_3_within_occ_4_nace_1.png saved a
 > xtitle("Tilsvarende antall yrker") ///
 > ytitle("Prosent av utdanningsgrupper") 
 
-. gr export ${figures}/cdf_neq_occ_4_within_edu_3.png, replace
-(file ./out/figures/cdf_neq_occ_4_within_edu_3.png not found)
-file ./out/figures/cdf_neq_occ_4_within_edu_3.png saved as PNG format
+. gr export ${figures}/cdf_neq_occ_4_within_edu_3.svg, replace
+(file ./out/figures/cdf_neq_occ_4_within_edu_3.svg not found)
+file ./out/figures/cdf_neq_occ_4_within_edu_3.svg saved as SVG format
 
 . 
 . // pooled across all time periods, weighted by employment, cdf of equivalized occupation groups
@@ -3228,9 +3216,9 @@ file ./out/figures/cdf_neq_occ_4_within_edu_3.png saved as PNG format
 > xtitle("Tilsvarende antall yrker") ///
 > ytitle("Prosent av utdanningsgrupper") 
 
-. gr export ${figures}/cdf_fw_neq_occ_4_within_edu_3.png, replace
-(file ./out/figures/cdf_fw_neq_occ_4_within_edu_3.png not found)
-file ./out/figures/cdf_fw_neq_occ_4_within_edu_3.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_occ_4_within_edu_3.svg, replace
+(file ./out/figures/cdf_fw_neq_occ_4_within_edu_3.svg not found)
+file ./out/figures/cdf_fw_neq_occ_4_within_edu_3.svg saved as SVG format
 
 . 
 . // pooled across all time periods, weighted by employment, cdf of equivalized occupation groups, alternative education groups
@@ -3252,9 +3240,9 @@ file ./out/figures/cdf_fw_neq_occ_4_within_edu_3.png saved as PNG format
 > xtitle("Tilsvarende antall yrker") ///
 > ytitle("Prosent av utdanningsgrupper") 
 
-. gr export ${figures}/cdf_fw_neq_occ_4_within_edu_3alt.png, replace
-(file ./out/figures/cdf_fw_neq_occ_4_within_edu_3alt.png not found)
-file ./out/figures/cdf_fw_neq_occ_4_within_edu_3alt.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_occ_4_within_edu_3alt.svg, replace
+(file ./out/figures/cdf_fw_neq_occ_4_within_edu_3alt.svg not found)
+file ./out/figures/cdf_fw_neq_occ_4_within_edu_3alt.svg saved as SVG format
 
 . 
 . // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, cdf of equivalized occupation groups
@@ -3282,9 +3270,9 @@ file ./out/figures/cdf_fw_neq_occ_4_within_edu_3alt.png saved as PNG format
 > ytitle("Prosent av utdanningsgrupper") ///
 > legend(order(1 "2015" 2 "2019"))
 
-. gr export ${figures}/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3.png, replace
-(file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3.png not found)
-file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3.svg, replace
+(file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3.svg not found)
+file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3.svg saved as SVG format
 
 . 
 . // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, cdf of equivalized occupation groups, alternative education groups
@@ -3312,9 +3300,9 @@ file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3.png saved as PNG f
 > ytitle("Prosent av utdanningsgrupper") ///
 > legend(order(1 "2015" 2 "2019"))
 
-. gr export ${figures}/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3alt.png, replace
-(file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3alt.png not found)
-file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3alt.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3alt.svg, replace
+(file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3alt.svg not found)
+file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3alt.svg saved as SVG format
 
 . 
 . // 2015(q2-q4) vs 2019(q1-q4), weighted by employment, ecdf of equivalized occupations, by industry
@@ -3343,9 +3331,9 @@ file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3alt.png saved as PN
 >         ytitle("Prosent av utdanningsgrupper") ///
 >         legend(order(1 "2015" 2 "2019")) 
 
-. gr export ${figures}/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3_nace_1.png, replace
-(file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3_nace_1.png not found)
-file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3_nace_1.png saved as PNG format
+. gr export ${figures}/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3_nace_1.svg, replace
+(file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3_nace_1.svg not found)
+file ./out/figures/cdf_fw_neq_2015_vs_2019_occ_4_within_edu_3_nace_1.svg saved as SVG format
 
 . 
 . exit
@@ -3354,11 +3342,11 @@ end of do-file
 
 . 
 . di "$S_TIME $S_DATE"
-18:01:53 11 Nov 2022
+16:28:04 13 Jan 2023
 
 . log close
       name:  <unnamed>
        log:  /ssb/stamme01/admod/users/mga/admod-edu-occ/main.log
   log type:  text
- closed on:  11 Nov 2022, 18:01:53
-----------------------------------------------------------------------------------------------------------------------------------------------
+ closed on:  13 Jan 2023, 16:28:04
+------------------------------------------------------------------------------------------------------------------------------------------------
