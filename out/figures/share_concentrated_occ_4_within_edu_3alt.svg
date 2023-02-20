@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- This is a Stata 17.0 generated SVG file (http://www.stata.com) -->
+
+<svg version="1.1" width="5.50in" height="4.00in" viewBox="0 0 3960 2880" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<desc>Stata Graph - Graph</desc>
+	<rect x="0" y="0" width="3960" height="2880" style="fill:#FFFFFF;stroke:none"/>
+	<rect x="0.00" y="0.00" width="3959.88" height="2880.00" style="fill:#FFFFFF"/>
+	<rect x="2.88" y="2.88" width="3954.12" height="2874.24" style="fill:none;stroke:#FFFFFF;stroke-width:5.76"/>
+	<rect x="529.93" y="103.74" width="3326.21" height="2482.56" style="fill:none;stroke:#000000;stroke-width:5.76"/>
+	<line x1="527.05" y1="2053.45" x2="3859.02" y2="2053.45" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="527.05" y1="1581.20" x2="3859.02" y2="1581.20" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="527.05" y1="1108.83" x2="3859.02" y2="1108.83" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="527.05" y1="636.47" x2="3859.02" y2="636.47" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="590.41" y1="2589.18" x2="590.41" y2="100.86" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="1042.84" y1="2589.18" x2="1042.84" y2="100.86" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="1495.39" y1="2589.18" x2="1495.39" y2="100.86" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="1947.95" y1="2589.18" x2="1947.95" y2="100.86" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="2400.50" y1="2589.18" x2="2400.50" y2="100.86" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="2852.93" y1="2589.18" x2="2852.93" y2="100.86" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="3305.49" y1="2589.18" x2="3305.49" y2="100.86" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<line x1="3758.04" y1="2589.18" x2="3758.04" y2="100.86" style="stroke:#E7ECEC;stroke-width:8.64"/>
+	<path d=" M590.29 2137.72 L628.03 2165.07 L665.77 2161.86 L703.39 2163.34 L741.14 2167.30 L778.88 2161.61 L816.63 2157.15 L854.25 2156.78 L891.99 2159.75 L929.73 2145.89 L967.48 2154.43 L1005.10 2157.15 L1042.84 2145.89 L1080.59 2146.63 L1118.20 2147.62 L1155.95 2147.01 L1193.69 2155.05 L1231.44 2156.91 L1269.06 2159.63 L1306.80 2155.05 L1344.54 2155.42 L1382.29 2144.28 L1419.91 2144.16 L1457.65 2145.89 L1495.39 2142.06 L1533.02 2142.55 L1570.76 2143.42 L1608.50 2145.27 L1646.25 2145.03 L1683.87 2147.87 L1721.61 2151.96 L1759.35 2148.37 L1797.10 2146.39 L1834.72 2139.95 L1872.46 2139.95 L1910.20 2140.69 L1947.83 2137.60 L1985.57 2137.35 L2023.31 2137.60 L2061.06 2138.10 L2098.68 2139.70 L2136.42 2140.45 L2174.16 2144.65 L2211.78 2142.43 L2249.53 2140.08 L2287.27 2134.63 L2325.01 2134.88 L2362.64 2135.74 L2400.38 2130.30 L2438.12 2132.03 L2475.87 2132.53 L2513.49 2133.39 L2551.23 2134.01 L2588.97 2135.00 L2626.59 2138.96 L2664.34 2136.98 L2702.08 2133.76 L2739.82 2059.14 L2777.45 2060.50 L2815.19 2060.63 L2852.93 2056.91 L2890.68 2057.41 L2928.30 2055.43 L2966.04 2047.26 L3003.78 2046.02 L3041.40 2045.65 L3079.15 2051.72 L3116.89 2121.51 L3154.64 2119.90 L3192.26 2045.90 L3230.00 2045.78 L3267.74 2045.40 L3305.49 2041.32 L3343.11 2040.70 L3380.85 2040.58 L3418.59 2041.44 L3456.21 2043.18 L3493.96 2046.64 L3531.70 2054.31 L3569.45 2054.69 L3607.07 2053.82 L3644.81 2054.19 L3682.55 2054.69 L3720.30 2055.30 L3757.92 2051.47 L3795.66 2052.46" stroke-linejoin="round" style="fill:none;stroke:#1FA138;stroke-width:8.64"/>
+	<line x1="527.05" y1="2589.18" x2="527.05" y2="100.86" style="stroke:#000000;stroke-width:5.76"/>
+	<line x1="527.05" y1="2525.82" x2="487.08" y2="2525.82" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="467.03" y="2560.84" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="end">0.0</text>
+	<line x1="527.05" y1="2053.45" x2="487.08" y2="2053.45" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="467.03" y="2088.48" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="end">10.0</text>
+	<line x1="527.05" y1="1581.20" x2="487.08" y2="1581.20" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="467.03" y="1616.23" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="end">20.0</text>
+	<line x1="527.05" y1="1108.83" x2="487.08" y2="1108.83" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="467.03" y="1143.86" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="end">30.0</text>
+	<line x1="527.05" y1="636.47" x2="487.08" y2="636.47" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="467.03" y="671.49" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="end">40.0</text>
+	<line x1="527.05" y1="164.22" x2="487.08" y2="164.22" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="467.03" y="199.25" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="end">50.0</text>
+	<text x="190.71" y="1344.96" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" transform="rotate(-90 190.71,1344.96)" text-anchor="middle">Prosent</text>
+	<line x1="527.05" y1="2589.18" x2="3859.02" y2="2589.18" style="stroke:#000000;stroke-width:5.76"/>
+	<line x1="590.41" y1="2589.18" x2="590.41" y2="2629.15" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="590.41" y="2719.13" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="middle">2015</text>
+	<line x1="1042.84" y1="2589.18" x2="1042.84" y2="2629.15" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="1042.84" y="2719.13" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="middle">2016</text>
+	<line x1="1495.39" y1="2589.18" x2="1495.39" y2="2629.15" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="1495.39" y="2719.13" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="middle">2017</text>
+	<line x1="1947.95" y1="2589.18" x2="1947.95" y2="2629.15" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="1947.95" y="2719.13" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="middle">2018</text>
+	<line x1="2400.50" y1="2589.18" x2="2400.50" y2="2629.15" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="2400.50" y="2719.13" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="middle">2019</text>
+	<line x1="2852.93" y1="2589.18" x2="2852.93" y2="2629.15" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="2852.93" y="2719.13" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="middle">2020</text>
+	<line x1="3305.49" y1="2589.18" x2="3305.49" y2="2629.15" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="3305.49" y="2719.13" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="middle">2021</text>
+	<line x1="3758.04" y1="2589.18" x2="3758.04" y2="2629.15" style="stroke:#000000;stroke-width:5.76"/>
+	<text x="3758.04" y="2719.13" style="font-family:'Open Sans';font-size:99.99px;fill:#274247" text-anchor="middle">2022</text>
+</svg>
